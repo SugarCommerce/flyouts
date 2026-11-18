@@ -138,4 +138,23 @@ final class RuntimeTest extends TestCase {
 		}
 	}
 
+
+	/**
+	 * A plugin of the family prefixes with a namespace that also starts
+	 * "SugarCommerce", and its build is still its own; a plugin outside the
+	 * family keeps the name its first segment always gave it.
+	 */
+	public function test_a_family_plugin_build_is_not_taken_for_the_library(): void {
+		$this->assertSame(
+			'sugarcommerce-playground-vendor-sugarcommerce-flyouts',
+			Runtime::prefix_for( 'SugarCommerce\\Playground\\Vendor\\SugarCommerce\\Flyouts\\Utils' )
+		);
+		$this->assertNotSame(
+			Runtime::prefix_for( 'SugarCommerce\\Playground\\Vendor\\SugarCommerce\\Flyouts\\Utils' ),
+			Runtime::prefix_for( 'SugarCommerce\\Members\\Vendor\\SugarCommerce\\Flyouts\\Utils' ),
+			'Two family plugins share a name.'
+		);
+		$this->assertSame( 'sugarcart-sugarcommerce-flyouts', Runtime::prefix_for( 'SugarCart\\Vendor\\SugarCommerce\\Flyouts\\Utils' ) );
+		$this->assertSame( 'sugarcommerce-flyouts', Runtime::prefix_for( '\\SugarCommerce\\Flyouts\\Utils\\' ) );
+	}
 }

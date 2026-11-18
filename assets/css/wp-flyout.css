@@ -318,7 +318,12 @@
     gap: 4px;
 }
 
-.wp-flyout-trigger .wp-flyout-trigger-icon {
+.wp-flyout-trigger .wp-flyout-trigger-icon,
+.wp-core-ui .wp-flyout-trigger .dashicons.wp-flyout-trigger-icon {
+    /* The second selector outranks WordPress 7.1's button icon rule
+       (`.wp-core-ui .button .dashicons`, line-height 1.9 and four classes
+       for its sizes), which stretched a Dashicon's line to 30px inside its
+       16px box and drew the glyph below the button's text. */
     flex: none;
     font-size: 16px;
     width: 16px;

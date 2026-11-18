@@ -205,4 +205,18 @@ final class StylesheetTest extends TestCase {
 		$this->assertGreaterThanOrEqual( 100, (int) $tags[1], 'The tags shrink no faster than the title.' );
 		$this->assertDoesNotMatchRegularExpression( '/\.wp-flyout-title-row \.wp-flyout-title\s*\{[^}]*flex-shrink/s', $css, 'The title was made to shrink faster.' );
 	}
+
+	/**
+	 * A Dashicon in a trigger button keeps its own line height.
+	 *
+	 * WordPress 7.1 gives every Dashicon in a button `line-height: 1.9`
+	 * through `.wp-core-ui .button .dashicons` (and four classes for the
+	 * button sizes). The trigger's icon rule has to outrank that, or the
+	 * glyph sits below the words beside it.
+	 */
+	public function test_a_dashicon_in_a_trigger_outranks_cores_button_icons(): void {
+		$css = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/wp-flyout.css' );
+
+		$this->assertSame( 1, preg_match( '/\.wp-core-ui \.wp-flyout-trigger \.dashicons\.wp-flyout-trigger-icon\s*\{[^}]*line-height:\s*1;/s', $css ) );
+	}
 }

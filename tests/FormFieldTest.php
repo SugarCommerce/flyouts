@@ -1,0 +1,429 @@
+<?php
+/**
+ * Form field tests.
+ *
+ * @package SugarCommerce\Flyouts
+ */
+
+declare( strict_types=1 );
+
+namespace SugarCommerce\Flyouts\Tests;
+
+use SugarCommerce\Flyouts\Components\FormField;
+use SugarCommerce\Flyouts\Manager;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * This component was seventeen render methods rendering the same seventeen
+ * types the fields package already rendered — the third copy of that job in this
+ * codebase, and the one that had drifted furthest.
+ *
+ * What is asserted here is the seam: the flyout's own configuration shape
+ * still works, the flyout's own wrapper is still there for its stylesheet and
+ * its conditional script, and what comes out is now the fields package's markup, with
+ * the labelling and associations that the hand-written renderer never had.
+ */
+final class FormFieldTest extends TestCase {
+
+	/**
+	 * Render one field, the way a panel does.
+	 *
+	 * Through the manager's own render path rather than a component of its
+	 * own: FormField used to be constructible and renderable on its own, and
+	 * that second path had drifted from the one a registered flyout takes.
+	 * What is asserted here is what a panel actually shows.
+	 *
+	 * @param array<string, mixed> $config Field configuration.
+	 *
+	 * @return string
+	 */
+	private function render( array $config ): string {
+		$manager = new Manager( 'form_field_test' );
+		$method  = new \ReflectionMethod( $manager, 'render_fields' );
+		$key     = (string) ( $config['name'] ?? 'thing' );
+
+		return (string) $method->invoke( $manager, [ $key => $config ], null );
+	}
+
+	/**
+	 * The flyout's own wrapper survives.
+	 *
+	 * Its stylesheet keys on the class and its conditional script keys on the
+	 * data attribute; the fields package's wrapper sits inside it.
+	 */
+	public function test_the_flyout_wrapper_survives(): void {
+		$html = $this->render(
+			[
+				'type'          => 'text',
+				'name'          => 'colour',
+				'label'         => 'Colour',
+				'wrapper_class' => 'is-wide',
+			]
+		);
+
+		$this->assertStringContainsString( 'class="wp-flyout-field field-type-text is-wide"', $html );
+		$this->assertStringContainsString( 'field-kit__field', $html );
+	}
+
+	/**
+	 * The field's name and id reach the control.
+	 */
+	public function test_the_name_and_id_reach_the_control(): void {
+		$html = $this->render(
+			[
+				'type'  => 'text',
+				'name'  => 'colour',
+				'label' => 'Colour',
+			]
+		);
+
+		$this->assertStringContainsString( 'name="colour"', $html );
+		$this->assertStringContainsString( 'id="colour"', $html );
+		$this->assertStringContainsString( '<label for="colour">Colour</label>', $html );
+	}
+
+	/**
+	 * A description is associated, which the old renderer never did.
+	 *
+	 * It printed a <p class="description"> next to the control and nothing
+	 * referenced it, so it was text on the screen and nothing to a screen
+	 * reader working through the form.
+	 */
+	public function test_a_description_is_associated(): void {
+		$html = $this->render(
+			[
+				'type'        => 'text',
+				'name'        => 'colour',
+				'label'       => 'Colour',
+				'description' => 'Help text.',
+			]
+		);
+
+		$this->assertStringContainsString( 'aria-describedby="colour__description"', $html );
+		$this->assertStringContainsString( 'id="colour__description"', $html );
+	}
+
+	/**
+	 * This library's own spellings still resolve.
+	 */
+	public function test_the_libraries_own_type_names_still_work(): void {
+		$this->assertStringContainsString(
+			'field-kit__relational',
+			$this->render(
+				[
+					'type' => 'ajax_select',
+					'name' => 'thing',
+				]
+			)
+		);
+	}
+
+	/**
+	 * A value resolved at render time still is.
+	 *
+	 * The fields package has no notion of one — a field set reads from a context — so it
+	 * is resolved before the field is built.
+	 */
+	public function test_a_data_callback_supplies_the_value(): void {
+		$html = $this->render(
+			[
+				'type'          => 'text',
+				'name'          => 'colour',
+				'data_callback' => static fn() => 'from the callback',
+			]
+		);
+
+		$this->assertStringContainsString( 'value="from the callback"', $html );
+	}
+
+	/**
+	 * An unknown type renders nothing rather than a broken control.
+	 */
+	public function test_an_unknown_type_renders_nothing(): void {
+		$this->assertSame( '', $this->render( [ 'type' => 'not_a_type' ] ) );
+	}
+
+	/**
+	 * Sanitizing goes through the same type that rendered.
+	 *
+	 * A separate sanitizer table drifts from the renderer — a value drawn one
+	 * way and cleaned another — which is what this library had: seven hundred
+	 * lines deciding for a second time what a number or a checkbox is. It is
+	 * the field set's job now, so the coercion a field gets here is the one
+	 * the same field gets on a settings page.
+	 */
+	public function test_sanitizing_goes_through_the_fields_package(): void {
+		$manager = new Manager( 'sanitize_test' );
+
+		$values = $manager->sanitize(
+			[
+				'count'  => [ 'type' => 'number', 'name' => 'count', 'max' => 10 ],
+				'choice' => [
+					'type'    => 'select',
+					'name'    => 'choice',
+					'options' => [ 'a' => 'A' ],
+				],
+			],
+			[
+				'count'  => '9999',
+				'choice' => 'not an option',
+			]
+		);
+
+		// Clamped by the field's own max.
+		$this->assertSame( 10, $values['count'] );
+
+		// A select's options are its allow-list, which a separate table had
+		// no way of knowing. Nothing survives it, so the field is reported as
+		// cleared rather than as holding an empty string.
+		$this->assertArrayHasKey( 'choice', $values );
+		$this->assertNull( $values['choice'] );
+	}
+
+	/**
+	 * A key the flyout does not declare is dropped.
+	 *
+	 * Which is what stops a crafted submission being more powerful than the
+	 * panel it pretends to come from.
+	 */
+	public function test_an_undeclared_key_is_dropped(): void {
+		$manager = new Manager( 'sanitize_test' );
+
+		$values = $manager->sanitize(
+			[ 'name' => [ 'type' => 'text', 'name' => 'name' ] ],
+			[ 'name' => 'Ada', 'role' => 'administrator' ]
+		);
+
+		$this->assertArrayHasKey( 'name', $values );
+		$this->assertArrayNotHasKey( 'role', $values );
+	}
+
+	/**
+	 * A custom sanitizer still wins.
+	 */
+	public function test_a_custom_sanitizer_still_wins(): void {
+		$manager = new Manager( 'sanitize_test' );
+
+		$values = $manager->sanitize(
+			[
+				'count' => [
+					'type'              => 'number',
+					'name'              => 'count',
+					'sanitize_callback' => static fn() => 'overridden',
+				],
+			],
+			[ 'count' => 'anything' ]
+		);
+
+		$this->assertSame( 'overridden', $values['count'] );
+	}
+
+	/**
+	 * A field's own `value` becomes the fields package's default.
+	 *
+	 * This library has always let a field carry a literal value; the fields package has
+	 * no notion of one — a field set reads from a context and falls back to a
+	 * default. Without the translation every field written that way rendered
+	 * empty, which is what the demo's own coupon code and weight did, in a
+	 * panel whose whole job was to show them.
+	 */
+	public function test_a_literal_value_becomes_the_default(): void {
+		$field = FormField::to_field( [ 'type' => 'text', 'value' => 'SUMMER-2026' ] );
+
+		$this->assertSame( 'SUMMER-2026', $field['default'] );
+		$this->assertArrayNotHasKey( 'value', $field );
+	}
+
+	/**
+	 * An explicit default wins, and an empty value is not one.
+	 */
+	public function test_an_explicit_default_wins(): void {
+		$field = FormField::to_field( [ 'type' => 'text', 'value' => 'v', 'default' => 'd' ] );
+		$this->assertSame( 'd', $field['default'] );
+
+		$field = FormField::to_field( [ 'type' => 'text', 'value' => '' ] );
+		$this->assertArrayNotHasKey( 'default', $field );
+	}
+
+	/**
+	 * A price configuration becomes a group of fields-package fields.
+	 *
+	 * It was a component: 292 lines of PHP, a stylesheet with a hand-rolled
+	 * chevron SVG, and a script to show one control when another changed —
+	 * which is what `depends` does. The submitted shape is unchanged, because
+	 * a group stores its children under one key, which is what the component
+	 * already did.
+	 */
+	/**
+	 * The fields package is handed what it reads and nothing else.
+	 *
+	 * It reports configuration nothing consumes under WP_DEBUG, once per
+	 * field per render -- so a key this library owns and forgets to keep to
+	 * itself is a notice on every panel, and enough of them bury the real
+	 * one. The product panel emitted a hundred and fifty-eight.
+	 *
+	 * Asked of the fields package fields themselves rather than of a _doing_it_wrong
+	 * stub: the warning only fires under WP_DEBUG, so a test that watched
+	 * for the notice would pass whether or not the keys were stripped.
+	 */
+	public function test_a_panel_does_not_hand_the_fields_package_its_own_keys(): void {
+		$manager = new Manager( 'unknown_keys_test' );
+
+		$method = new \ReflectionMethod( Manager::class, 'field_set' );
+
+		[ $set ] = $method->invoke(
+			$manager,
+			[
+				'title'  => [ 'type' => 'text', 'label' => 'Title', 'tab' => 'details' ],
+				'amount' => [ 'type' => 'number', 'label' => 'Amount', 'tab' => 'pricing' ],
+			],
+			(object) [ 'title' => 'Kit', 'amount' => 10 ]
+		);
+
+		$unknown = [];
+
+		foreach ( $set->fields() as $field ) {
+			$unknown = array_merge( $unknown, $field->unknown_keys() );
+		}
+
+		$this->assertSame( [], array_values( array_unique( $unknown ) ) );
+	}
+
+	/**
+	 * A trigger given a class wears that class, not that class plus `button`.
+	 *
+	 * core's .page-title-action is a complete button style -- its own
+	 * padding, min-height, line-height and a -3px offset to sit on the
+	 * heading's line. Carrying `button` as well, the Add New trigger got two
+	 * sets of box metrics and came out half again too tall.
+	 *
+	 * @return void
+	 */
+	public function test_a_trigger_wears_only_the_class_it_was_given(): void {
+		$manager = new Manager( 'button_test' );
+		$manager->register_flyout( 'thing', [ 'title' => 'Thing', 'fields' => [] ] );
+
+		$html = $manager->get_button( 'thing', [], [ 'text' => 'Add New', 'class' => 'page-title-action' ] );
+
+		$this->assertStringContainsString( 'page-title-action', $html );
+		$this->assertStringContainsString( 'wp-flyout-trigger', $html );
+		$this->assertDoesNotMatchRegularExpression( '/class="[^"]*\bbutton\b/', $html );
+	}
+
+	/**
+	 * And one given nothing is an ordinary admin button, as before.
+	 *
+	 * @return void
+	 */
+	public function test_a_trigger_given_no_class_is_an_admin_button(): void {
+		$manager = new Manager( 'button_test_default' );
+		$manager->register_flyout( 'thing', [ 'title' => 'Thing', 'fields' => [] ] );
+
+		$this->assertMatchesRegularExpression(
+			'/class="[^"]*\bbutton\b/',
+			$manager->get_button( 'thing', [], [ 'text' => 'Open' ] )
+		);
+	}
+
+	public function test_a_price_configuration_becomes_a_group(): void {
+		$field = FormField::to_field(
+			[
+				'type'       => 'price_config',
+				'name'       => 'price',
+				'amount'     => 1999,
+				'currency'   => 'GBP',
+				'currencies' => [ 'GBP', 'USD' ],
+			]
+		);
+
+		$this->assertSame( 'group', $field['type'] );
+		$this->assertSame( 'price', $field['name'] );
+		$this->assertSame(
+			[ 'amount', 'recurring_interval', 'recurring_interval_count' ],
+			array_keys( $field['fields'] )
+		);
+
+		$amount = $field['fields']['amount'];
+
+		$this->assertSame( 'amount_type', $amount['type'] );
+		$this->assertSame( 1999, $amount['default'] );
+		$this->assertSame( 'currency', $amount['type_meta_key'] );
+		$this->assertSame( [ 'GBP' => 'GBP', 'USD' => 'USD' ], $amount['type_options'] );
+	}
+
+	/**
+	 * A discount configuration likewise, and its months field depends.
+	 *
+	 * A script used to show and hide that field by setting an inline style,
+	 * which left it in the tab order and readable by a screen reader while
+	 * invisible. The fields package's conditions do it properly.
+	 */
+	public function test_a_discount_configuration_becomes_a_group(): void {
+		$field = FormField::to_field(
+			[
+				'type'             => 'discount_config',
+				'name'             => 'discount',
+				'amount'           => 10,
+				'rate_type'        => 'percent',
+				'currency_symbol'  => '£',
+				'show_redemptions' => true,
+			]
+		);
+
+		$this->assertSame( 'group', $field['type'] );
+		$this->assertSame(
+			[ 'amount', 'duration', 'duration_in_months', 'max_redemptions' ],
+			array_keys( $field['fields'] )
+		);
+
+		$this->assertSame( 'rate_type', $field['fields']['amount']['type_meta_key'] );
+		$this->assertSame( [ 'percent' => '%', 'fixed' => '£' ], $field['fields']['amount']['type_options'] );
+		$this->assertSame( [ 'duration' => 'repeating' ], $field['fields']['duration_in_months']['depends'] );
+	}
+
+	/**
+	 * Redemptions are not shown unless asked for.
+	 */
+	public function test_redemptions_are_opt_in(): void {
+		$field = FormField::to_field( [ 'type' => 'discount_config', 'name' => 'discount' ] );
+
+		$this->assertArrayNotHasKey( 'max_redemptions', $field['fields'] );
+	}
+
+	/**
+	 * A unit input is the fields package's amount type, in the fields package's spelling.
+	 */
+	public function test_a_unit_input_becomes_an_amount(): void {
+		$field = FormField::to_field(
+			[
+				'type'       => 'unit_input',
+				'name'       => 'weight',
+				'unit_value' => 'kg',
+				'units'      => [ 'kg' => 'kg', 'lb' => 'lb' ],
+			]
+		);
+
+		$this->assertSame( 'amount_type', $field['type'] );
+		$this->assertSame( [ 'kg' => 'kg', 'lb' => 'lb' ], $field['type_options'] );
+		$this->assertSame( 'kg', $field['current_type'] );
+
+		// And the old spellings do not travel on as keys nothing reads.
+		$this->assertArrayNotHasKey( 'units', $field );
+		$this->assertArrayNotHasKey( 'unit_value', $field );
+	}
+
+	/**
+	 * One unit is a fixed unit, not a select of one option.
+	 *
+	 * A dropdown you cannot change is a control that looks like a decision
+	 * and is not one.
+	 */
+	public function test_a_single_unit_is_fixed_rather_than_a_select(): void {
+		$field = FormField::to_field(
+			[ 'type' => 'unit_input', 'name' => 'weight', 'units' => [ 'kg' => 'kg' ] ]
+		);
+
+		$this->assertSame( 'kg', $field['unit'] );
+		$this->assertArrayNotHasKey( 'type_options', $field );
+	}
+}

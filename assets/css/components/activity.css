@@ -1,0 +1,258 @@
+/**
+ * WP Flyout - Activity Component
+ *
+ * A column of small pictures joined by a line, each with a sentence beside
+ * it and how long ago at the end of the row; a note written by somebody on
+ * a tinted ground of its own; and a box over it all to write one in. The
+ * line is what makes it one story and not a list.
+ *
+ * The greys and radii are the panel's own variables, so it sits on a card
+ * as if the card had drawn it.
+ */
+
+.wp-flyout-activity {
+	grid-column: 1 / -1;
+	min-width: 0;
+}
+
+/* Nothing to show yet, said quietly where the list would be. */
+.wp-flyout-activity-empty {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-activity-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wp-flyout-activity-item {
+	position: relative;
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	margin: 0;
+	padding: 0 0 16px;
+}
+
+.wp-flyout-activity-item:last-child {
+	padding-bottom: 0;
+}
+
+/* The line, from under one picture to the top of the next. */
+.wp-flyout-activity-item:not(:last-child)::before {
+	content: "";
+	position: absolute;
+	top: 30px;
+	bottom: 2px;
+	left: 13px;
+	width: 1px;
+	background: var(--wp-flyout-card-border);
+}
+
+.wp-flyout-activity-icon {
+	display: inline-flex;
+	flex: 0 0 28px;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var(--wp-flyout-surface);
+	font-size: 15px;
+	line-height: 28px;
+	text-align: center;
+	color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-activity-icon .sugarcommerce-icon {
+	width: 15px;
+	height: 15px;
+	font-size: 15px;
+}
+
+/* What an event means, not what colour it is. `accent` is the admin's own
+   colour: money coming in, say. */
+.wp-flyout-activity-item.is-accent .wp-flyout-activity-icon,
+.wp-flyout-activity-item.is-info .wp-flyout-activity-icon {
+	background: color-mix(in srgb, var(--wp-flyout-primary) 10%, #fff);
+	color: var(--wp-flyout-primary);
+}
+
+.wp-flyout-activity-item.is-success .wp-flyout-activity-icon {
+	background: #e3f5e7;
+	color: #0a6b2b;
+}
+
+.wp-flyout-activity-item.is-warning .wp-flyout-activity-icon {
+	background: #fcf1d2;
+	color: #7a5600;
+}
+
+.wp-flyout-activity-item.is-danger .wp-flyout-activity-icon {
+	background: #fce8e8;
+	color: #a3211f;
+}
+
+/* The sentence, and how long ago at the far end of its row. */
+.wp-flyout-activity-body {
+	display: flex;
+	flex: 1 1 auto;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0 12px;
+	min-width: 0;
+	padding-top: 4px;
+}
+
+.wp-flyout-activity-text {
+	flex: 1 1 60%;
+	min-width: 0;
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+	color: var(--wp-flyout-text);
+}
+
+.wp-flyout-activity-text a {
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.wp-flyout-activity-text a:hover {
+	text-decoration: underline;
+}
+
+/* A whole sentence that opens something reads as a sentence. */
+.wp-flyout-activity-item.is-link .wp-flyout-activity-text a {
+	font-weight: 400;
+	color: inherit;
+}
+
+.wp-flyout-activity-item.is-link .wp-flyout-activity-text a:hover,
+.wp-flyout-activity-item.is-link .wp-flyout-activity-text a:focus {
+	color: var(--wp-flyout-primary);
+}
+
+.wp-flyout-activity-hint {
+	margin: 12px 0 0 40px;
+}
+
+.wp-flyout-activity-meta {
+	color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-activity-meta img {
+	margin: -2px 5px 0 0;
+	vertical-align: middle;
+}
+
+.wp-flyout-activity-dot {
+	margin: 0 6px;
+	color: #a0a3a8;
+}
+
+.wp-flyout-activity-time,
+.wp-flyout-activity-by {
+	flex: 0 0 auto;
+	margin: 0;
+	font-size: 12.5px;
+	line-height: 1.5;
+	white-space: nowrap;
+	color: var(--wp-flyout-text-muted);
+}
+
+/* A note: somebody's own words, on a tinted ground, signed underneath. */
+.wp-flyout-activity-item.is-note .wp-flyout-activity-icon {
+	background: #fff6d6;
+	color: #7a5600;
+}
+
+.wp-flyout-activity-item.is-note .wp-flyout-activity-body {
+	display: block;
+	padding-top: 0;
+}
+
+.wp-flyout-activity-note {
+	padding: 8px 12px;
+	border-radius: var(--wp-flyout-control-radius);
+	background: #fffaeb;
+	font-size: 13px;
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+	color: var(--wp-flyout-text);
+}
+
+.wp-flyout-activity-by {
+	margin-top: 4px;
+	white-space: normal;
+}
+
+.wp-flyout-activity-by .button-link {
+	font-size: inherit;
+	text-decoration: none;
+	color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-activity-by .button-link:hover,
+.wp-flyout-activity-by .button-link:focus {
+	color: #b32d2e;
+}
+
+.wp-flyout-activity-more {
+	margin: 16px 0 0;
+}
+
+/* The note box over the feed --------------------------------------------- */
+
+.wp-flyout-activity-compose {
+	margin: 0 0 20px;
+}
+
+/*
+ * One line tall until something has been written in it, and the button
+ * with it: there is nothing to add until then. On what it holds and not on
+ * whether it has focus -- a box that shrank when focus left it moved the
+ * feed up under the pointer, and the press meant for a row landed on the
+ * one below.
+ */
+.wp-flyout-activity-input {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: 42px;
+	min-height: 42px;
+	padding: 10px 14px;
+	border: 1px solid var(--wp-flyout-control-border);
+	border-radius: var(--wp-flyout-control-radius);
+	font-size: 13px;
+	line-height: 1.5;
+	resize: vertical;
+}
+
+.wp-flyout-activity-input:not(:placeholder-shown) {
+	height: 88px;
+	padding-bottom: 4px;
+}
+
+.wp-flyout-activity-compose-actions {
+	display: none;
+	justify-content: flex-end;
+	margin: 8px 0 0;
+}
+
+.wp-flyout-activity-input:not(:placeholder-shown) + .wp-flyout-activity-compose-actions {
+	display: flex;
+}
+
+@media screen and (max-width: 600px) {
+	/* How long ago goes under the sentence, where there is room for it. */
+	.wp-flyout-activity-text {
+		flex-basis: 100%;
+	}
+}

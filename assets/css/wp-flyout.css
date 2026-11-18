@@ -1,0 +1,4195 @@
+/**
+ * WP Flyout - Core
+ *
+ * Flyout shell, layout, form fields, tabs, footer, and responsive.
+ * This file handles everything structural. Component-specific styles
+ * live in wp-flyout-components.css.
+ *
+ * @package SugarCommerce\Flyouts
+ * @version 1.0.0
+ */
+
+/* ========================================
+   CSS VARIABLES
+   ======================================== */
+
+:root {
+    /* Dimensions */
+    --wp-flyout-width-small: 400px;
+    --wp-flyout-width-medium: 600px;
+    --wp-flyout-width-large: 800px;
+    --wp-flyout-width-full: calc(100vw - 160px);
+
+    /* Colours.
+
+       The accent follows the user's admin colour scheme rather than being
+       blue because blue is what WordPress happened to ship with: core
+       publishes --wp-admin-theme-color and recolours it per scheme, so a
+       panel that hardcodes #2271b1 is the one thing on the screen that does
+       not change when someone picks Midnight or Ectoplasm.
+
+       The hex after each is a fallback for a context where core's variables
+       are not on the page at all — the login screen, a front-end render.
+
+       The greys and the status colours stay literal: core does not publish
+       variables for them, and inventing our own names for #dcdcde would be a
+       second vocabulary rather than fewer. */
+    --wp-flyout-bg: #fff;
+    --wp-flyout-border: #dcdcde;
+    --wp-flyout-shadow: rgba(0, 0, 0, 0.1);
+    --wp-flyout-text: #1e1e1e;
+    --wp-flyout-text-muted: #646970;
+    --wp-flyout-text-secondary: #8c8f94;
+    --wp-flyout-primary: var(--wp-admin-theme-color, #2271b1);
+    --wp-flyout-primary-hover: var(--wp-admin-theme-color-darker-10, #135e96);
+    --wp-flyout-primary-active: var(--wp-admin-theme-color-darker-20, #0a4b78);
+    --wp-flyout-focus-width: var(--wp-admin-border-width-focus, 2px);
+    --wp-flyout-success: #00a32a;
+    --wp-flyout-success-dark: #008a20;
+    --wp-flyout-warning: #dba617;
+    --wp-flyout-error: #d63638;
+    --wp-flyout-error-bg: #fcf0f1;
+    --wp-flyout-info: #72aee6;
+}
+
+/* ========================================
+   OVERLAY
+   ======================================== */
+
+.wp-flyout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 159999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.wp-flyout-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ========================================
+   FLYOUT SHELL
+   ======================================== */
+
+.wp-flyout {
+    position: fixed;
+    top: 32px;
+    right: 0;
+    bottom: 0;
+    background: var(--wp-flyout-bg);
+    box-shadow: -2px 0 10px var(--wp-flyout-shadow);
+    z-index: 160000;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+    max-height: calc(100vh - 32px);
+}
+
+.wp-flyout.active {
+    transform: translateX(0);
+}
+
+.wp-flyout-small {
+    width: var(--wp-flyout-width-small);
+}
+
+.wp-flyout-medium {
+    width: var(--wp-flyout-width-medium);
+}
+
+.wp-flyout-large {
+    width: var(--wp-flyout-width-large);
+}
+
+.wp-flyout-full {
+    width: var(--wp-flyout-width-full);
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.wp-flyout-header {
+    padding: 20px 30px;
+    background: var(--wp-flyout-bg);
+    border-bottom: 1px solid var(--wp-flyout-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.wp-flyout-header-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.wp-flyout-header h2,
+.wp-flyout-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--wp-flyout-text);
+    line-height: 1.3;
+}
+
+.wp-flyout-subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-close {
+    background: none;
+    border: none;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--wp-flyout-text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-left: 12px;
+}
+
+.wp-flyout-close:hover {
+    color: var(--wp-flyout-text);
+    background: #f0f0f1;
+}
+
+.wp-flyout-close .sugarcommerce-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+/* ========================================
+   TABS
+   ======================================== */
+
+.wp-flyout-tabs {
+    background: var(--wp-flyout-bg);
+    border-bottom: 1px solid var(--wp-flyout-border);
+    flex-shrink: 0;
+}
+
+.wp-flyout-tab-nav {
+    display: flex;
+    margin: 0;
+    padding: 0 30px;
+    gap: 4px;
+}
+
+.wp-flyout-tab {
+    padding: 14px 20px;
+    background: none;
+    color: var(--wp-flyout-text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wp-flyout-tab:hover {
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-tab.active {
+    color: var(--wp-flyout-primary);
+    border-bottom-color: var(--wp-flyout-primary);
+}
+
+.wp-flyout-tab.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========================================
+   BODY
+   ======================================== */
+
+.wp-flyout-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 30px;
+    min-height: 0;
+}
+
+.wp-flyout-tab-content {
+    display: none;
+}
+
+.wp-flyout-tab-content.active {
+    display: block;
+    animation: wpFlyoutFadeIn 0.3s;
+}
+
+@keyframes wpFlyoutFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+
+.wp-flyout-footer {
+    background: var(--wp-flyout-bg);
+    border-top: 1px solid var(--wp-flyout-border);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+.wp-flyout-actions {
+    display: flex;
+    gap: 12px;
+    padding: 20px 0;
+    align-items: center;
+}
+
+.wp-flyout-footer .wp-flyout-actions {
+    padding: 20px !important;
+}
+
+.wp-flyout-actions .button {
+    flex: 1;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    justify-content: center;
+    min-height: 44px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+/* ========================================
+   FORM
+   ======================================== */
+
+.wp-flyout-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* ========================================
+   TRIGGER BUTTON
+   ======================================== */
+
+.wp-flyout-trigger.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* A trigger's `icon`, whatever class the caller gave the button. */
+.wp-flyout-trigger:has(.wp-flyout-trigger-icon) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wp-flyout-trigger .wp-flyout-trigger-icon {
+    flex: none;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+}
+
+/* ========================================
+   FORM FIELDS
+   ======================================== */
+
+.wp-flyout-field {
+    margin-bottom: 20px;
+}
+
+/* A field's own label -- not the <label> core's colour picker wraps its hex
+   box and Clear in, which is an inline row of its own. */
+.wp-flyout-field label:not(:where(.wp-picker-input-wrap)) {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--wp-flyout-text);
+    font-size: 13px;
+}
+
+.wp-flyout-field .required {
+    color: var(--wp-flyout-error);
+    margin-left: 2px;
+}
+
+/*
+ * Input styling, for the controls a flyout renders itself.
+ *
+ * The child combinator is what keeps it off the fields package's: a combobox's own
+ * input sits inside a wrapper, styled by the fields package. The select exclusion is
+ * for the one the fields package leaves in place behind an enhanced control — styling
+ * it here would show through for the moment before the script runs.
+ */
+.wp-flyout-field > input[type="text"],
+.wp-flyout-field > input[type="email"],
+.wp-flyout-field > input[type="number"],
+.wp-flyout-field > input[type="url"],
+.wp-flyout-field > input[type="tel"],
+.wp-flyout-field > input[type="date"],
+.wp-flyout-field > input[type="password"],
+.wp-flyout-field > textarea,
+.wp-flyout-field > select:not(.field-kit__select--enhanced) {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+
+.wp-flyout-field > input:focus,
+.wp-flyout-field > textarea:focus,
+.wp-flyout-field > select:not(.field-kit__select--enhanced):focus {
+    border-color: var(--wp-flyout-primary);
+    box-shadow: 0 0 0 1px var(--wp-flyout-primary);
+    outline: 2px solid transparent;
+}
+
+.wp-flyout-field > textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/*
+ * The fields package's own selects stretch to the panel.
+ *
+ * A select on a settings screen keeps core's width so it does not run the
+ * width of a desktop. A flyout is already as narrow as a form gets, and a
+ * short select beside full-width text inputs reads as a mistake rather
+ * than a choice -- so inside the panel every select, combobox, region and
+ * price takes the line.
+ */
+.wp-flyout-body .field-kit__field select,
+.wp-flyout-body .field-kit__field .field-kit__money,
+.wp-flyout-body .field-kit__field .field-kit__combobox,
+.wp-flyout-body .field-kit__field .field-kit__combobox-input,
+.wp-flyout-body .field-kit__field .field-kit__region,
+.wp-flyout-body .field-kit__field .field-kit__region-select,
+.wp-flyout-body .field-kit__field .field-kit__region-text {
+    width: 100%;
+    max-width: none;
+}
+
+/*
+ * And so does anything typed into.
+ *
+ * Core's regular-text is 25em wherever it is written, which in a panel is
+ * about two thirds of the way across. A name and an email stopped short of
+ * the select under them, and the ragged right edge read as fields that had
+ * not been laid out rather than fields of different kinds.
+ */
+.wp-flyout-body .field-kit__field > input[type="text"],
+.wp-flyout-body .field-kit__field > input[type="email"],
+.wp-flyout-body .field-kit__field > input[type="url"],
+.wp-flyout-body .field-kit__field > input[type="tel"],
+.wp-flyout-body .field-kit__field > input[type="number"],
+.wp-flyout-body .field-kit__field > input[type="password"],
+.wp-flyout-body .field-kit__field > input[type="search"],
+.wp-flyout-body .field-kit__field > textarea {
+    width: 100%;
+    max-width: none;
+}
+
+/*
+ * A file field takes the line too.
+ *
+ * On a settings screen the picker is as wide as the input it wraps, which
+ * is core's regular-text. In a panel that left a URL cut off after twenty
+ * characters with half the row empty beside it.
+ */
+.wp-flyout-body .field-kit__media-input {
+    display: block;
+}
+
+/* ========================================
+   LISTS OF ROWS
+   ======================================== */
+
+/*
+ * A row is a card, drawn the way the block editor draws one: a hairline, a
+ * small radius and white all the way up.
+ *
+ * The fields package's own row has a grey strip for a header and a border as dark as
+ * an input's, which is right on a settings screen where it has a page of
+ * white to stand out from. In a panel every row is already inside a form,
+ * and the strip and the border read as a table from an older admin.
+ */
+.wp-flyout-body li.field-kit__repeater-row {
+    border-color: #e0e0e0;
+    border-radius: 6px;
+}
+
+.wp-flyout-body .field-kit__repeater-header {
+    padding: 8px 8px 8px 12px;
+    border-bottom-color: #f0f0f0;
+    border-radius: 6px 6px 0 0;
+    background: none;
+}
+
+.wp-flyout-body .field-kit__repeater-row--collapsible.is-closed .field-kit__repeater-header {
+    border-radius: 6px;
+}
+
+/* The closed row is the one that needs to say it can be opened. */
+.wp-flyout-body .field-kit__repeater-row--collapsible.is-closed:hover {
+    border-color: #c3c4c7;
+}
+
+/*
+ * A list inside a row is part of that row, not a second card.
+ *
+ * Outlined, it was a box inside a box with two sets of padding, and the
+ * fields in it started a thumb's width in from the ones above. A tint
+ * groups them as well as a border did and costs no width.
+ */
+.wp-flyout-body .field-kit__repeater-fields li.field-kit__repeater-row {
+    padding: 12px;
+    border: 0;
+    border-radius: 6px;
+    background: #f6f7f7;
+}
+
+/*
+ * A list of one-field rows is one bordered list, ruled between its rows.
+ *
+ * A card round each row was a box drawn round a box: the input has a border
+ * of its own and the row's sat a few pixels outside it. Taking the card
+ * away fixed that and lost something else -- a column of bare inputs is a
+ * form, not a list, and nothing said that each line was a thing that could
+ * be moved or removed.
+ *
+ * So the border goes round the list and a hairline goes between the rows,
+ * the way a settings list or a table is drawn, and the input gives up its
+ * own border to the row it is in. It gets it back while it is being typed
+ * in, which is when it matters where the edges of the control are.
+ *
+ * After the rule for a nested row, so a one-field list inside a row is
+ * drawn the same way rather than tinted.
+ */
+.wp-flyout-body .field-kit__repeater--single > .field-kit__repeater-rows[data-empty="false"] {
+    max-width: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row {
+    margin: 0;
+    padding: 4px 8px 4px 4px;
+    border: 0;
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 0;
+    background: none;
+}
+
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row:last-child {
+    border-bottom: 0;
+}
+
+/* Pointed at, a row says it is one. */
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row:hover {
+    background: #fafafa;
+}
+
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row .field-kit__field input:not(:focus) {
+    border-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+/* The picker's button is part of the input, so it loses its edge with it. */
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row .field-kit__field input:not(:focus) ~ .field-kit__media-buttons .field-kit__media-button {
+    border-inline-start-color: transparent;
+    background: none;
+}
+
+/*
+ * Removing a row is not the thing to notice about it.
+ *
+ * A red bin on every row put four or five of them down the side of a panel
+ * before anything had gone wrong. Grey until it is pointed at or tabbed to,
+ * when it turns the red it always was -- and always red where there is no
+ * pointer to do the pointing.
+ */
+.wp-flyout-body .wp-core-ui .field-kit__repeater-remove,
+.wp-core-ui .wp-flyout-body .field-kit__repeater-remove {
+    color: #757575;
+}
+
+.wp-flyout-body .wp-core-ui .field-kit__repeater-remove:hover,
+.wp-flyout-body .wp-core-ui .field-kit__repeater-remove:focus,
+.wp-core-ui .wp-flyout-body .field-kit__repeater-remove:hover,
+.wp-core-ui .wp-flyout-body .field-kit__repeater-remove:focus {
+    color: #b32d2e;
+}
+
+@media (hover: none) {
+    .wp-flyout-body .wp-core-ui .field-kit__repeater-remove,
+    .wp-core-ui .wp-flyout-body .field-kit__repeater-remove {
+        color: #b32d2e;
+    }
+}
+
+/*
+ * An empty list is one thing, not three.
+ *
+ * It was a line of italics saying there was nothing, a button under it to
+ * add something, and the field's help under that -- three lines that each
+ * started somewhere different and none of which looked like a place to put
+ * anything. Drawn as a single dashed slot, with what is missing on one side
+ * and the way to add it on the other, it reads as the space the first row
+ * will go in.
+ *
+ * Keyed on the list saying it is empty, which the script keeps up to date,
+ * so the slot goes the moment a row is added and comes back when the last
+ * one is removed. A browser without :has() shows the two lines as before.
+ */
+.wp-flyout-body .field-kit__repeater:has(> .field-kit__repeater-rows[data-empty="true"]) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    padding: 6px 6px 6px 14px;
+    border: 1px dashed #c3c4c7;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+/* The list itself has nothing in it to show, and as a flex child it would
+   still be given a gap either side of nothing. */
+.wp-flyout-body .field-kit__repeater:has(> .field-kit__repeater-rows[data-empty="true"]) > .field-kit__repeater-rows {
+    display: none;
+}
+
+.wp-flyout-body .field-kit__repeater:has(> .field-kit__repeater-rows[data-empty="true"]) > p {
+    margin: 0;
+}
+
+/* Upright and grey. Italics are what a note is set in, and this is a
+   statement about the list rather than a note under it. Three classes, to
+   outrank the panel's own rule for a description, which this also is. */
+.wp-flyout-body .field-kit__repeater .field-kit__repeater-empty {
+    color: #757575;
+    font-size: 13px;
+    font-style: normal;
+}
+
+/* A group's heading starts where a field's label does. A legend has two
+   pixels of padding from the browser that a label has not, so "Features"
+   sat a hair to the right of "Description" above it. */
+.wp-flyout-body .field-kit__legend {
+    padding-inline: 0;
+}
+
+/*
+ * "Add another" is a quiet action, so it is drawn as one.
+ *
+ * As an outlined button it was the second loudest thing in the panel after
+ * Save, and a panel with two lists had two of them. Text in the theme
+ * colour, with a wash behind it on hover, is how the block editor draws an
+ * action that is offered rather than urged.
+ */
+.wp-flyout-body .wp-core-ui .field-kit__repeater-add,
+.wp-core-ui .wp-flyout-body .field-kit__repeater-add {
+    min-height: 36px;
+    padding: 0 12px;
+    border-color: transparent;
+    border-radius: 4px;
+    background: none;
+    box-shadow: none;
+    color: var(--wp-flyout-primary);
+    font-weight: 500;
+}
+
+.wp-flyout-body .wp-core-ui .field-kit__repeater-add:hover,
+.wp-core-ui .wp-flyout-body .field-kit__repeater-add:hover {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--wp-flyout-primary) 6%, transparent);
+    color: var(--wp-flyout-primary-hover);
+}
+
+.wp-flyout-body .wp-core-ui .field-kit__repeater-add:focus,
+.wp-core-ui .wp-flyout-body .field-kit__repeater-add:focus {
+    border-color: transparent;
+    box-shadow: none;
+    outline: var(--wp-flyout-focus-width) solid var(--wp-flyout-primary);
+    outline-offset: 1px;
+}
+
+.wp-flyout-field > select:not(.field-kit__select--enhanced) {
+    max-width: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="14" height="8" viewBox="0 0 14 8"%3e%3cpath fill="%23646970" d="M7 8L0 0h14L7 8z"/%3e%3c/svg%3e');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 14px 8px;
+    padding-right: 32px;
+}
+
+.wp-flyout-field .description {
+    margin-top: 5px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* ========================================
+   FIELD GROUPS
+   ======================================== */
+
+.wp-flyout-field-group {
+    margin-bottom: 20px;
+}
+
+.wp-flyout-field-group .wp-flyout-field {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+/* ========================================
+   TOGGLE
+   ======================================== */
+
+.wp-flyout-toggle {
+    position: relative;
+    display: inline-flex !important;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.wp-flyout-toggle input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.wp-flyout-toggle .toggle-slider {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+}
+
+.wp-flyout-toggle .toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.wp-flyout-toggle input[type="checkbox"]:checked ~ .toggle-slider {
+    background: var(--wp-flyout-primary);
+}
+
+.wp-flyout-toggle input[type="checkbox"]:checked ~ .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.wp-flyout-toggle .toggle-label {
+    font-size: 14px;
+    color: var(--wp-flyout-text);
+}
+
+/* ========================================
+   RADIO GROUP
+   ======================================== */
+
+.wp-flyout-radio-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.wp-flyout-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 0;
+}
+
+.wp-flyout-radio input[type="radio"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    border: 2px solid #8c8f94;
+    border-radius: 50%;
+    background: #fff;
+    transition: all 0.2s ease;
+    position: relative;
+    flex-shrink: 0;
+    margin-right: 4px;
+}
+
+.wp-flyout-radio input[type="radio"]:checked {
+    border-color: var(--wp-flyout-primary);
+}
+
+.wp-flyout-radio input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: var(--wp-flyout-primary);
+    border-radius: 50%;
+}
+
+.wp-flyout-radio .radio-label {
+    font-size: 14px;
+    color: var(--wp-flyout-text);
+    line-height: 1.4;
+}
+
+/* ========================================
+   VALIDATION
+   ======================================== */
+
+.wp-flyout-field.has-error input,
+.wp-flyout-field.has-error select,
+.wp-flyout-field.has-error textarea,
+.wp-flyout-field input.error,
+.wp-flyout-field select.error,
+.wp-flyout-field textarea.error {
+    border-color: var(--wp-flyout-error) !important;
+}
+
+/* ========================================
+   CONDITIONAL FIELDS
+   ======================================== */
+
+.wp-flyout-field-wrapper.conditional-field {
+    overflow: hidden;
+    transition: opacity 0.2s ease;
+}
+
+.wp-flyout-field-wrapper.conditional-field[style*="display: none"] {
+    opacity: 0;
+}
+
+/* ========================================
+   SEPARATOR
+   ======================================== */
+
+.wp-flyout-separator {
+    border: 0;
+    border-top: 1px solid var(--wp-flyout-border);
+    margin: 20px 0;
+}
+
+.wp-flyout-separator.has-text {
+    display: flex;
+    align-items: center;
+    border: 0;
+    text-align: center;
+}
+
+.wp-flyout-separator.has-text::before,
+.wp-flyout-separator.has-text::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--wp-flyout-border);
+}
+
+.wp-flyout-separator.has-text .separator-text {
+    padding: 0 15px;
+    color: var(--wp-flyout-text-muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ========================================
+   ENTITY HEADER
+   ======================================== */
+
+.entity-header {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--wp-flyout-border);
+}
+
+.entity-header-visual {
+    flex-shrink: 0;
+}
+
+.entity-header-image {
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid #f0f0f1;
+}
+
+.entity-header-icon {
+    background: #f6f7f7;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--wp-flyout-text-muted);
+}
+
+.entity-header-icon .sugarcommerce-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 28px;
+}
+
+.entity-header-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.entity-header-title {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--wp-flyout-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.entity-header-subtitle {
+    font-size: 14px;
+    color: var(--wp-flyout-text-muted);
+    margin-bottom: 8px;
+}
+
+.entity-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--wp-flyout-text-muted);
+}
+
+.entity-header-description {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #50575e;
+    line-height: 1.6;
+}
+
+/* Badges */
+.entity-header-title .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.entity-header-title .badge-default {
+    background: #f0f0f1;
+    color: #50575e;
+}
+
+.entity-header-title .badge-success {
+    background: #e6f5e8;
+    color: var(--wp-flyout-success-dark);
+}
+
+.entity-header-title .badge-info {
+    background: #e5f5fa;
+    color: #0073aa;
+}
+
+.entity-header-title .badge-warning {
+    background: #fcf9e8;
+    color: #996800;
+}
+
+.entity-header-title .badge-error,
+.entity-header-title .badge-danger {
+    background: #fce8e8;
+    color: var(--wp-flyout-error);
+}
+
+.entity-header-title .badge-primary {
+    background: var(--wp-flyout-primary);
+    color: #fff;
+}
+
+.entity-header-title .badge-secondary {
+    background: var(--wp-flyout-text-muted);
+    color: #fff;
+}
+
+/* Meta items */
+.entity-header-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.entity-header-meta-item .sugarcommerce-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #787c82;
+}
+
+/*
+ * A picture in place of the icon, at the icon's size: a flag beside a
+ * country, a mark beside a source. Drawn as it is, not cropped to a
+ * circle -- a brand's mark is made for a square and lost its corners --
+ * with an edge that follows its own outline and takes no room, so a
+ * picture white at its rim still has an edge on a white card.
+ */
+.entity-header-meta-item .entity-header-meta-image {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.2));
+}
+
+.entity-header-meta-item:has(> .entity-header-meta-image) {
+    gap: 6px;
+}
+
+.entity-header-meta-item .meta-label {
+    font-weight: 500;
+}
+
+.entity-header-meta-item .meta-value {
+    color: var(--wp-flyout-text);
+}
+
+/* ========================================
+   IMAGE PICKER
+   ======================================== */
+
+.image-picker {
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.image-picker .image-picker-preview {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid #f0f0f1;
+    border-radius: inherit;
+}
+
+.image-picker .image-picker-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.image-picker .image-picker-fallback {
+    opacity: 0.6;
+}
+
+.image-picker .image-picker-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #f6f7f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a7aaad;
+}
+
+.image-picker .image-picker-placeholder .sugarcommerce-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+}
+
+.image-picker .image-picker-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: inherit;
+}
+
+.image-picker:hover .image-picker-overlay {
+    opacity: 1;
+}
+
+.image-picker .image-picker-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    color: var(--wp-flyout-text);
+    transition: background 0.15s ease;
+}
+
+.image-picker .image-picker-btn:hover {
+    background: #fff;
+}
+
+.image-picker .image-picker-btn .sugarcommerce-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.image-picker .image-picker-remove:hover {
+    background: var(--wp-flyout-error);
+    color: #fff;
+}
+
+.image-picker .image-picker-value {
+    display: none;
+}
+
+/* Shapes */
+.image-picker.shape-circle {
+    border-radius: 50%;
+}
+
+.image-picker.shape-square {
+    border-radius: 0;
+}
+
+.image-picker.shape-rounded {
+    border-radius: 8px;
+}
+
+/* Field variant */
+.image-picker--field {
+    width: 100%;
+    border: 2px dashed #c3c4c7;
+    transition: border-color 0.2s ease;
+}
+
+.image-picker--field:hover {
+    border-color: var(--wp-flyout-primary);
+}
+
+.image-picker--field.has-image {
+    border-style: solid;
+    border-color: #c3c4c7;
+}
+
+.image-picker--field .image-picker-placeholder {
+    min-height: 120px;
+}
+
+.image-picker--field .image-picker-placeholder .sugarcommerce-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.image-picker--field .image-picker-btn {
+    width: 36px;
+    height: 36px;
+}
+
+.image-picker--field .image-picker-btn .sugarcommerce-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.image-picker-empty-text {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #757575;
+    font-style: italic;
+}
+
+/* ========================================
+   ALERT
+   ======================================== */
+
+.wp-flyout-alert {
+    position: relative;
+    padding: 12px 40px 12px 12px;
+    margin: 20px 0;
+    border-left: 4px solid;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.alert-content-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.alert-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+}
+
+.alert-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.alert-title {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wp-flyout-text);
+}
+
+.alert-message {
+    line-height: 1.5;
+    color: var(--wp-flyout-text);
+    font-size: 14px;
+}
+
+.alert-dismiss {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    display: none;
+}
+
+.wp-flyout-alert.is-dismissible .alert-dismiss {
+    display: block;
+}
+
+.alert-dismiss:hover {
+    opacity: 1;
+}
+
+.alert-icon .sugarcommerce-icon,
+.alert-dismiss .sugarcommerce-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+.wp-flyout-alert.alert-success {
+    border-color: var(--wp-flyout-success);
+    background: #edfaef;
+}
+
+.wp-flyout-alert.alert-info {
+    border-color: var(--wp-flyout-primary);
+    background: #f0f6fc;
+}
+
+.wp-flyout-alert.alert-warning {
+    border-color: var(--wp-flyout-warning);
+    background: #fcf9e8;
+}
+
+.wp-flyout-alert.alert-error {
+    border-color: var(--wp-flyout-error);
+    background: #fef2f2;
+}
+
+/* ========================================
+   SECTION HEADERS
+   ======================================== */
+
+.wp-flyout-section-header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--wp-flyout-border);
+    padding-bottom: 12px;
+}
+
+.wp-flyout-section-header .section-title {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wp-flyout-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wp-flyout-section-header .description {
+    margin: 0;
+    font-size: 13px;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+
+.wp-flyout-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.wp-flyout-empty-state .empty-state-icon {
+    display: block;
+    margin-bottom: 15px;
+    color: var(--wp-flyout-text-muted);
+    width: 100%;
+}
+
+/* The circle is the wrapper; the glyph inside it is the size the font's was. */
+.wp-flyout-empty-state .empty-state-icon .sugarcommerce-icon {
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
+}
+
+.wp-flyout-empty-state .empty-state-title {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-empty-state .empty-state-description {
+    margin: 0 0 20px 0;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* ========================================
+   INFO GRID
+   ======================================== */
+
+.wp-flyout-info-grid {
+    display: grid;
+    gap: 16px;
+    margin: 20px 0;
+}
+
+.wp-flyout-info-grid[data-columns="1"] {
+    grid-template-columns: 1fr;
+}
+
+.wp-flyout-info-grid[data-columns="2"] {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.wp-flyout-info-grid[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.wp-flyout-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.wp-flyout-info-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--wp-flyout-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wp-flyout-info-value {
+    font-size: 14px;
+    color: var(--wp-flyout-text);
+}
+
+/* ========================================
+   DATA TABLE
+   ======================================== */
+
+.datatable-wrapper {
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+.wp-flyout-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border: 1px solid var(--wp-flyout-border);
+}
+
+.wp-flyout-data-table th,
+.wp-flyout-data-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.wp-flyout-data-table thead th {
+    font-weight: 600;
+    background: #f6f7f7;
+    font-size: 13px;
+    color: var(--wp-flyout-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wp-flyout-data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.wp-flyout-data-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.wp-flyout-data-table .empty-row {
+    text-align: center;
+    font-style: italic;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media screen and (max-width: 782px) {
+    .wp-flyout {
+        width: 100%;
+        top: 46px;
+        max-height: calc(100vh - 46px);
+    }
+
+    .wp-flyout-header,
+    .wp-flyout-body,
+    .wp-flyout-footer {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .wp-flyout-tab-nav {
+        padding: 0 20px;
+        overflow-x: auto;
+    }
+
+    .wp-flyout-title {
+        font-size: 18px;
+    }
+
+    .wp-flyout-subtitle {
+        font-size: 12px;
+    }
+
+    .entity-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .wp-flyout-info-grid[data-columns="2"],
+    .wp-flyout-info-grid[data-columns="3"] {
+        grid-template-columns: 1fr;
+    }
+
+    .wp-flyout-data-table th,
+    .wp-flyout-data-table td {
+        padding: 10px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .wp-flyout-field-group {
+        flex-direction: column !important;
+    }
+
+    .wp-flyout-actions {
+        flex-direction: column;
+    }
+
+    .wp-flyout-actions .button {
+        width: 100%;
+    }
+}
+
+/* ========================================
+   THE PANEL, AS A PLACE TO GET SOMETHING DONE
+   ======================================== */
+
+/*
+ * Everything above lays the panel out. This is how it looks, in one place.
+ *
+ * The form used to be core's form on a white sheet: grey outlines, italic
+ * notes, a save button the width of the screen. All correct, and all of it
+ * reads as an admin screen from a while ago. This is the same panel as a
+ * quiet grey surface with the form on a white card, which is what makes a
+ * form look like one thing to fill in rather than a page of loose controls:
+ *
+ *   - the card groups, so borders can be lighter and still be seen;
+ *   - notes under a field are upright and smaller, because italic grey was
+ *     the hardest text on the panel to read and it is the text that helps;
+ *   - short fields sit two to a row instead of half a row each;
+ *   - the tabs are a choice between pages, drawn as one;
+ *   - Save is a button, where a button goes, and not a bar.
+ *
+ * Colour still comes from the admin's own scheme, so it belongs to the
+ * screen it opens on.
+ */
+:root {
+    --wp-flyout-surface: #f6f6f7;
+    --wp-flyout-card-border: #e3e3e6;
+    --wp-flyout-control-border: #c4c7cc;
+    --wp-flyout-control-radius: 8px;
+    --wp-flyout-card-radius: 12px;
+    --wp-flyout-text: #1f2124;
+    --wp-flyout-text-muted: #5c5f66;
+}
+
+.wp-flyout-overlay {
+    background: rgba(17, 18, 20, 0.45);
+}
+
+.wp-flyout {
+    background: var(--wp-flyout-surface);
+    box-shadow: -12px 0 40px rgba(17, 18, 20, 0.18);
+}
+
+/* Header ---------------------------------------------------------------- */
+
+.wp-flyout-header {
+    padding: 18px 24px;
+    border-bottom-color: var(--wp-flyout-card-border);
+}
+
+.wp-flyout-header h2,
+.wp-flyout-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.wp-flyout-subtitle {
+    margin-top: 2px;
+    font-size: 13px;
+}
+
+.wp-flyout-close {
+    border-radius: var(--wp-flyout-control-radius);
+}
+
+/* Tabs ------------------------------------------------------------------ */
+
+.wp-flyout-tabs {
+    border-bottom-color: var(--wp-flyout-card-border);
+}
+
+.wp-flyout-tab-nav {
+    padding: 8px 20px;
+    gap: 2px;
+}
+
+.wp-flyout-tab {
+    padding: 7px 12px;
+    border: 0;
+    border-radius: var(--wp-flyout-control-radius);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    transition: background-color 0.12s, color 0.12s;
+}
+
+.wp-flyout-tab:hover {
+    background: var(--wp-flyout-surface);
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-tab.active {
+    background: #ebebed;
+    color: var(--wp-flyout-text);
+    font-weight: 600;
+}
+
+.wp-flyout-tab:focus,
+.wp-flyout-tab:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: 1px;
+}
+
+.wp-flyout-tab:focus:not(:focus-visible) {
+    outline: 0;
+}
+
+/* The card -------------------------------------------------------------- */
+
+.wp-flyout-body {
+    padding: 20px;
+}
+
+/*
+ * One page of a tabbed panel, or the whole form of a plain one. A grid of
+ * two columns that everything spans unless it says it is short.
+ */
+.wp-flyout-tab-content.active,
+.wp-flyout-form:not(:has(> .wp-flyout-tab-content)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px 16px;
+    align-content: start;
+    align-items: start;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--wp-flyout-card-border);
+    border-radius: var(--wp-flyout-card-radius);
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.03);
+}
+
+.wp-flyout-form:not(:has(> .wp-flyout-tab-content)) {
+    flex: 0 0 auto;
+}
+
+.wp-flyout-tab-content.active > *,
+.wp-flyout-form:not(:has(> .wp-flyout-tab-content)) > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+    margin: 0;
+}
+
+.wp-flyout-tab-content.active > .wp-flyout-field:has(> .field-kit__field--half),
+.wp-flyout-form:not(:has(> .wp-flyout-tab-content)) > .wp-flyout-field:has(> .field-kit__field--half) {
+    grid-column: span 1;
+}
+
+/* A field hidden by a condition takes no row, and no gap either. */
+.wp-flyout-tab-content.active > .wp-flyout-field:has(> .field-kit__field[hidden]),
+.wp-flyout-form > .wp-flyout-field:has(> .field-kit__field[hidden]),
+.wp-flyout-tab-content.active > [hidden],
+.wp-flyout-form > [hidden] {
+    display: none;
+}
+
+.wp-flyout-body .field-kit__field--half {
+    width: auto;
+    max-width: none;
+}
+
+/* A page with nothing on it is not a card with nothing in it. */
+.wp-flyout-tab-content.active:empty {
+    display: none;
+}
+
+/* A page of titled cards ------------------------------------------------ */
+
+/*
+ * A panel with sections is not one card but several, so the page that holds
+ * them stops being a card and becomes the space between them.
+ */
+.wp-flyout-tab-content.active:has(> .wp-flyout-section),
+.wp-flyout-form:not(:has(> .wp-flyout-tab-content)):has(> .wp-flyout-section) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.wp-flyout-section {
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--wp-flyout-card-border);
+    border-radius: var(--wp-flyout-card-radius);
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.03);
+}
+
+.wp-flyout-section-title {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-section-description {
+    margin: -10px 0 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px 16px;
+    align-items: start;
+}
+
+.wp-flyout-section-fields > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+    margin: 0;
+}
+
+.wp-flyout-section-fields > .wp-flyout-field:has(> .field-kit__field--half) {
+    grid-column: span 1;
+}
+
+.wp-flyout-section-fields > .wp-flyout-field:has(> .field-kit__field[hidden]),
+.wp-flyout-section-fields > [hidden] {
+    display: none;
+}
+
+/* A card with nothing left on it -- every field hidden -- is not drawn. */
+.wp-flyout-section:not(:has(.wp-flyout-section-fields > :not([hidden]))) {
+    display: none;
+}
+
+/* Folded away until it is wanted. */
+.wp-flyout-section--collapsible > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.wp-flyout-section--collapsible > summary::-webkit-details-marker {
+    display: none;
+}
+
+.wp-flyout-section--collapsible > summary::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    margin-right: 4px;
+    border-right: 2px solid var(--wp-flyout-text-muted);
+    border-bottom: 2px solid var(--wp-flyout-text-muted);
+    transform: rotate(45deg);
+    transition: transform 0.15s;
+}
+
+.wp-flyout-section--collapsible[open] > summary {
+    margin-bottom: 16px;
+}
+
+.wp-flyout-section--collapsible[open] > summary::after {
+    transform: rotate(-135deg);
+}
+
+.wp-flyout-section--collapsible > summary:focus-visible {
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+/* Tabs over a page of cards are views of a record, not buttons: a rule
+   under the one that is showing. */
+.wp-flyout-tab {
+    padding: 10px 2px;
+    margin: 0 10px -1px;
+    border-radius: 0;
+    border-bottom: 2px solid transparent;
+}
+
+.wp-flyout-tab:first-child {
+    margin-left: 4px;
+}
+
+.wp-flyout-tab-nav {
+    padding: 0 20px;
+}
+
+.wp-flyout-tab:hover {
+    background: none;
+    border-bottom-color: var(--wp-flyout-control-border);
+}
+
+.wp-flyout-tab.active {
+    background: none;
+    border-bottom-color: var(--wp-flyout-text);
+}
+
+/* Labels and notes ------------------------------------------------------ */
+
+.wp-flyout-field label:not(:where(.wp-picker-input-wrap)),
+.wp-flyout-body .field-kit__field > label,
+.wp-flyout-body .field-kit__legend {
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-body .description,
+.wp-flyout-body p.description {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    font-style: normal;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* Controls -------------------------------------------------------------- */
+
+.wp-flyout-body input[type="text"]:not(:where(.wp-color-picker)),
+.wp-flyout-body input[type="email"],
+.wp-flyout-body input[type="url"],
+.wp-flyout-body input[type="tel"],
+.wp-flyout-body input[type="number"],
+.wp-flyout-body input[type="password"],
+.wp-flyout-body input[type="search"],
+.wp-flyout-body input[type="date"],
+.wp-flyout-body input[type="time"],
+.wp-flyout-body input[type="datetime-local"],
+.wp-flyout-body select,
+.wp-flyout-body textarea {
+    min-height: 38px;
+    padding: 6px 12px;
+    border: 1px solid var(--wp-flyout-control-border);
+    border-radius: var(--wp-flyout-control-radius);
+    background-color: #fff;
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.04);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text);
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.wp-flyout-body textarea {
+    padding: 9px 12px;
+}
+
+.wp-flyout-body input[type="date"],
+.wp-flyout-body input[type="time"],
+.wp-flyout-body input[type="datetime-local"] {
+    width: 100%;
+    max-width: none;
+}
+
+.wp-flyout-body input::placeholder,
+.wp-flyout-body textarea::placeholder {
+    color: #9a9da3;
+}
+
+.wp-flyout-body input[type="text"]:not(:where(.wp-color-picker)):hover,
+.wp-flyout-body input[type="email"]:hover,
+.wp-flyout-body input[type="url"]:hover,
+.wp-flyout-body input[type="tel"]:hover,
+.wp-flyout-body input[type="number"]:hover,
+.wp-flyout-body input[type="password"]:hover,
+.wp-flyout-body input[type="search"]:hover,
+.wp-flyout-body input[type="date"]:hover,
+.wp-flyout-body select:hover,
+.wp-flyout-body textarea:hover {
+    border-color: #a3a7ad;
+}
+
+.wp-flyout-body input[type="text"]:not(:where(.wp-color-picker)):focus,
+.wp-flyout-body input[type="email"]:focus,
+.wp-flyout-body input[type="url"]:focus,
+.wp-flyout-body input[type="tel"]:focus,
+.wp-flyout-body input[type="number"]:focus,
+.wp-flyout-body input[type="password"]:focus,
+.wp-flyout-body input[type="search"]:focus,
+.wp-flyout-body input[type="date"]:focus,
+.wp-flyout-body input[type="time"]:focus,
+.wp-flyout-body input[type="datetime-local"]:focus,
+.wp-flyout-body select:focus,
+.wp-flyout-body textarea:focus {
+    border-color: var(--wp-flyout-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp-flyout-primary) 22%, transparent);
+    outline: 2px solid transparent;
+}
+
+/*
+ * A number with its unit, and money with its symbol, fill the column they
+ * are in: the number takes the room and the unit takes what it needs.
+ */
+.wp-flyout-body .field-kit__amount,
+.wp-flyout-body .field-kit__money {
+    display: flex;
+    width: 100%;
+    max-width: none;
+}
+
+.wp-flyout-body .field-kit__amount .field-kit__amount-value,
+.wp-flyout-body .field-kit__money .field-kit__money-value {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+}
+
+.wp-flyout-body .field-kit__amount .field-kit__amount-unit {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 68px;
+    padding-right: 28px;
+}
+
+/*
+ * And they are one field, drawn as one: a single edge around both, square
+ * where they meet, and one focus ring whichever half is being typed in.
+ */
+.wp-flyout-body .field-kit__amount,
+.wp-flyout-body .field-kit__money {
+    border: 1px solid var(--wp-flyout-control-border);
+    border-radius: var(--wp-flyout-control-radius);
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.04);
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.wp-flyout-body .field-kit__amount:hover,
+.wp-flyout-body .field-kit__money:hover {
+    border-color: #a3a7ad;
+}
+
+.wp-flyout-body .field-kit__amount:focus-within,
+.wp-flyout-body .field-kit__money:focus-within {
+    border-color: var(--wp-flyout-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp-flyout-primary) 22%, transparent);
+}
+
+.wp-flyout-body .field-kit__amount input[type="number"].field-kit__amount-value,
+.wp-flyout-body .field-kit__amount select.field-kit__amount-unit,
+.wp-flyout-body .field-kit__money input.field-kit__money-value,
+.wp-flyout-body .field-kit__amount input[type="number"].field-kit__amount-value:focus,
+.wp-flyout-body .field-kit__amount select.field-kit__amount-unit:focus,
+.wp-flyout-body .field-kit__money input.field-kit__money-value:focus {
+    min-height: 36px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+    outline: 0;
+}
+
+.wp-flyout-body .field-kit__amount select.field-kit__amount-unit {
+    border-inline-start: 1px solid var(--wp-flyout-card-border);
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-body .field-kit__money .field-kit__money-symbol {
+    display: flex;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* A picture, chosen the way a featured image is ------------------------- */
+
+/*
+ * The block editor's featured image, value for value, because it is the
+ * one everybody using WordPress has already learned: a plain button the
+ * width of the panel that says what goes there, and once there is a
+ * picture, the picture at two to one with Replace and Remove laid over
+ * the foot of it when it is pointed at or tabbed to. The editor's own
+ * classes are not borrowed -- its stylesheet is not loaded on these
+ * screens -- so its rules are restated against the fields package's.
+ */
+.wp-flyout-body .field-kit__media--image {
+    position: relative;
+    display: block;
+}
+
+.wp-flyout-body .field-kit__media--image .field-kit__media-preview[data-empty="true"] {
+    display: none;
+}
+
+.wp-flyout-body .field-kit__media--image .field-kit__media-preview {
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 40px;
+    margin: 0;
+    border: 0;
+    border-radius: 2px;
+    outline: 1px solid rgba(0, 0, 0, 0.1);
+    outline-offset: -1px;
+    background: none;
+}
+
+.wp-flyout-body .field-kit__media--image .field-kit__media-preview img {
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 2 / 1;
+    object-fit: cover;
+    object-position: 50% 50%;
+}
+
+.wp-flyout-body .field-kit__media--image .field-kit__media-actions {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+}
+
+/* Nothing chosen: one button, the width of the panel. */
+.wp-flyout-body .field-kit__media--image:has(.field-kit__media-preview[data-empty="true"]) .field-kit__media-choose.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 2px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px #ccc;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: normal;
+    color: #1e1e1e;
+}
+
+.wp-flyout-body .field-kit__media--image:has(.field-kit__media-preview[data-empty="true"]) .field-kit__media-choose.button:hover {
+    background: #fff;
+    box-shadow: inset 0 0 0 1px #ccc;
+    color: var(--wp-flyout-primary);
+}
+
+.wp-flyout-body .field-kit__media--image:has(.field-kit__media-preview[data-empty="true"]) .field-kit__media-choose.button:focus {
+    box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-flyout-primary);
+    outline: 2px solid transparent;
+}
+
+.wp-flyout-body .field-kit__media--image:has(.field-kit__media-preview[data-empty="true"]) .field-kit__media-clear {
+    display: none;
+}
+
+/* Something chosen: Replace and Remove over the foot of the picture. */
+.wp-flyout-body .field-kit__media--image:not(:has(.field-kit__media-preview[data-empty="true"])) .field-kit__media-actions {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 8px;
+    opacity: 0;
+    transition: opacity 50ms ease-out;
+}
+
+.wp-flyout-body .field-kit__media--image:not(:has(.field-kit__media-preview[data-empty="true"])):hover .field-kit__media-actions,
+.wp-flyout-body .field-kit__media--image:not(:has(.field-kit__media-preview[data-empty="true"])):focus-within .field-kit__media-actions {
+    opacity: 1;
+}
+
+/* Nothing to point with: they are simply there. */
+@media (hover: none) {
+    .wp-flyout-body .field-kit__media--image:not(:has(.field-kit__media-preview[data-empty="true"])) .field-kit__media-actions {
+        opacity: 1;
+    }
+}
+
+.wp-flyout-body .field-kit__media--image:not(:has(.field-kit__media-preview[data-empty="true"])) .field-kit__media-actions .button {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.75);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: normal;
+    color: #1e1e1e;
+}
+
+.wp-flyout-body .field-kit__media--image:not(:has(.field-kit__media-preview[data-empty="true"])) .field-kit__media-actions .field-kit__media-clear {
+    color: var(--wp-flyout-primary);
+}
+
+/* Buttons --------------------------------------------------------------- */
+
+/*
+ * A button inside the form does something to the form -- choose, generate,
+ * add. It is not the thing the panel is for, so it does not take the
+ * panel's colour: white, with an edge, like the fields it sits beside.
+ *
+ * Except core's colour picker, whose swatch and Clear are both `.button`s.
+ * The swatch is a colour with a label beside it, and given this padding,
+ * edge and background it came out as "Select Color" squashed into a
+ * rounded box with the colour leaking round both ends. It is core's widget and keeps core's look; the text
+ * input rules above leave its hex box alone for the same reason. Both are
+ * excluded through :where(), so the exclusion adds no weight and every
+ * rule that out-ranked these still does.
+ */
+.wp-flyout-body .button:not(.button-primary):not(.button-link):not(.button-link-delete):not(:where(.wp-color-result, .wp-picker-clear)) {
+    min-height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--wp-flyout-control-border);
+    border-radius: var(--wp-flyout-control-radius);
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.05);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 36px;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-body .button:not(.button-primary):not(.button-link):not(.button-link-delete):not(:where(.wp-color-result, .wp-picker-clear)):hover {
+    border-color: #a3a7ad;
+    background: #fafafa;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-body .button.button-primary {
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: var(--wp-flyout-control-radius);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 36px;
+}
+
+/* Footer ---------------------------------------------------------------- */
+
+.wp-flyout-footer {
+    border-top-color: var(--wp-flyout-card-border);
+}
+
+.wp-flyout-footer .wp-flyout-actions {
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 20px !important;
+}
+
+.wp-flyout-actions .button {
+    flex: 0 0 auto;
+    min-width: 96px;
+    min-height: 40px;
+    padding: 0 20px;
+    border-radius: var(--wp-flyout-control-radius);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Nothing here yet ------------------------------------------------------ */
+
+.wp-flyout-empty-state {
+    padding: 44px 24px;
+}
+
+.wp-flyout-empty-state .empty-state-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--wp-flyout-surface);
+    font-size: 26px;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-empty-state .empty-state-title {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.wp-flyout-empty-state .empty-state-description {
+    max-width: 44ch;
+    margin: 0 auto 20px;
+    font-size: 13.5px;
+    line-height: 1.55;
+}
+
+.wp-flyout-empty-state .button {
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: var(--wp-flyout-control-radius);
+    font-weight: 600;
+    line-height: 36px;
+}
+
+@media screen and (max-width: 600px) {
+    .wp-flyout-tab-content.active,
+    .wp-flyout-form:not(:has(> .wp-flyout-tab-content)) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .wp-flyout-footer .wp-flyout-actions {
+        flex-direction: row;
+    }
+
+    .wp-flyout-actions .button {
+        width: auto;
+    }
+}
+
+/* ========================================
+   THE PANEL, AS SOMETHING THAT LOOKS AFTER YOU
+   ======================================== */
+
+/*
+ * Everything from here down is what the panel does for the person using it
+ * rather than how it looks at rest: it names the record it is showing, says
+ * when it is loading and when it has saved, asks before it throws anything
+ * away, and puts what went wrong beside the field that was wrong.
+ *
+ * None of it is new furniture. The buttons in the header are the close
+ * button three more times, the bars and the popover are white cards with the
+ * card's edge, and the one colour that is not grey is still the admin's own.
+ */
+
+/* Closed is gone, not merely off to one side ---------------------------- */
+
+/*
+ * A closed panel is only translated off the screen, and stays in the
+ * document until the next one replaces it -- so everything in it could
+ * still be reached with Tab, by somebody looking at a list table and
+ * wondering where focus had gone. Hidden once it has finished leaving.
+ */
+.wp-flyout {
+    visibility: hidden;
+    transition: transform 0.3s ease-out, visibility 0s linear 0.3s;
+}
+
+.wp-flyout.active {
+    visibility: visible;
+    transition: transform 0.3s ease-out, visibility 0s;
+}
+
+/* One panel taking another's place does not slide in again. */
+.wp-flyout.wp-flyout-instant {
+    transition: none;
+}
+
+/* The panel takes focus itself when it has nothing better to give it to. */
+.wp-flyout:focus {
+    outline: 0;
+}
+
+/* Header: which record this is ------------------------------------------ */
+
+/* What kind of thing it is, small, over what it is called. */
+.wp-flyout-eyebrow {
+    margin: 0 0 2px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    min-width: 0;
+}
+
+.wp-flyout-title-row .wp-flyout-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/*
+ * The state the record is in. A tint and a darker word of the same colour,
+ * so it reads as a label on the record and not as a button beside it.
+ */
+.wp-flyout-badge {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: #ebebed;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+    color: #3c3f44;
+}
+
+.wp-flyout-badge--success {
+    background: #e3f5e7;
+    color: #0a6b2b;
+}
+
+.wp-flyout-badge--warning {
+    background: #fcf1d2;
+    color: #7a5600;
+}
+
+.wp-flyout-badge--danger {
+    background: #fce8e8;
+    color: #a3211f;
+}
+
+.wp-flyout-badge--info {
+    background: color-mix(in srgb, var(--wp-flyout-primary) 12%, #fff);
+    color: var(--wp-flyout-primary-active);
+}
+
+/* Header: what can be done from here ------------------------------------ */
+
+.wp-flyout-header {
+    gap: 12px;
+}
+
+.wp-flyout-header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin-right: -8px;
+}
+
+/*
+ * Every button in the header is the same button: a glyph in a square big
+ * enough to hit without aiming. Forty pixels, which is what the close
+ * button was four short of.
+ */
+.wp-flyout-close,
+.wp-flyout-header-actions button:not(.wp-flyout-menu-item) {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--wp-flyout-control-radius);
+    background: none;
+    color: var(--wp-flyout-text-muted);
+    cursor: pointer;
+    transition: background-color 0.12s, color 0.12s;
+}
+
+.wp-flyout-close:hover,
+.wp-flyout-header-actions button:not(.wp-flyout-menu-item):hover:not(:disabled) {
+    background: #ebebed;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-close:focus-visible,
+.wp-flyout-header-actions button:not(.wp-flyout-menu-item):focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: -2px;
+}
+
+.wp-flyout-header-actions .sugarcommerce-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+/* Previous and next ----------------------------------------------------- */
+
+.wp-flyout-steps {
+    display: flex;
+    align-items: center;
+}
+
+/* At the end of the list there is nowhere further to go, and it says so. */
+.wp-flyout-step:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* The menu -------------------------------------------------------------- */
+
+/*
+ * The header stands above the body and the footer, because the list that
+ * opens from it has to fall over both.
+ */
+.wp-flyout-header {
+    position: relative;
+    z-index: 30;
+}
+
+.wp-flyout-menu {
+    position: relative;
+}
+
+/* Pressed in for as long as its list is open. */
+.wp-flyout-menu-toggle[aria-expanded="true"] {
+    background: #ebebed;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-menu-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    max-width: 280px;
+    padding: 6px;
+    border: 1px solid var(--wp-flyout-card-border);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(17, 18, 20, 0.16);
+    animation: wpFlyoutRise 0.12s ease-out;
+}
+
+.wp-flyout-menu-list[hidden] {
+    display: none;
+}
+
+.wp-flyout-menu-item {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: left;
+    text-decoration: none;
+    color: var(--wp-flyout-text);
+    cursor: pointer;
+}
+
+.wp-flyout-menu-item:hover,
+.wp-flyout-menu-item:focus {
+    background: var(--wp-flyout-surface);
+    box-shadow: none;
+    outline: 0;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-menu-item:focus-visible {
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: -2px;
+}
+
+/* Core's own red for a link that deletes. */
+.wp-flyout-menu-item.is-danger,
+.wp-flyout-menu-item.is-danger:hover,
+.wp-flyout-menu-item.is-danger:focus {
+    color: #b32d2e;
+}
+
+.wp-flyout-menu-item.is-danger:hover,
+.wp-flyout-menu-item.is-danger:focus {
+    background: #fcf0f1;
+}
+
+/*
+ * Which keys step through the list, said once at the foot of the menu. Not
+ * an item: quieter than one, with a rule above it, and nothing happens when
+ * it is pressed. Left out where the pointer is a finger, since a phone has
+ * no J and K to press.
+ */
+.wp-flyout-menu-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 8px 10px 4px;
+    border-top: 1px solid var(--wp-flyout-card-border);
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--wp-flyout-text-muted, #787c82);
+    cursor: default;
+    user-select: none;
+}
+
+.wp-flyout-menu-hint kbd {
+    min-width: 18px;
+    padding: 1px 4px;
+    box-sizing: border-box;
+    border: 1px solid var(--wp-flyout-card-border);
+    border-radius: 4px;
+    background: #f6f7f7;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    color: inherit;
+}
+
+.wp-flyout-menu-hint span {
+    margin-left: 4px;
+}
+
+@media screen and (max-width: 782px), (hover: none) {
+    .wp-flyout-menu-hint {
+        display: none;
+    }
+}
+
+/* Footer: Save, and the way out ----------------------------------------- */
+
+/*
+ * Cancel is a word rather than a second button, so there is one thing in
+ * the footer that looks like the thing to press. Delete, when there is one,
+ * goes to the far side: the destructive button is not next to the one a
+ * hand reaches for without looking.
+ */
+.wp-flyout-actions .wp-flyout-cancel {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: var(--wp-flyout-control-radius);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-actions .wp-flyout-cancel:hover {
+    background: #ebebed;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-actions .wp-flyout-cancel:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: -2px;
+}
+
+.wp-flyout-footer .wp-flyout-actions .wp-flyout-delete {
+    order: -1;
+    margin-right: auto;
+}
+
+/* Saving --------------------------------------------------------------- */
+
+/*
+ * The label keeps its place and a spinner turns over it, so the
+ * button is the same width before, during and after. It is not given the
+ * `disabled` attribute while it works -- see setButtonState() -- so it
+ * keeps its colour, and this is what stops it being pressed twice.
+ */
+.wp-flyout-footer .button.is-busy,
+.wp-flyout-header-actions .is-busy {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.wp-flyout-footer .button.is-busy::after,
+.wp-flyout-header-actions .is-busy::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid var(--wp-flyout-text-muted);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: wpFlyoutSpin 0.7s linear infinite;
+}
+
+.wp-flyout-header-actions .is-busy .sugarcommerce-icon {
+    visibility: hidden;
+}
+
+.wp-flyout-footer .button.button-primary.is-busy::after {
+    border-color: #fff;
+    border-right-color: transparent;
+}
+
+@keyframes wpFlyoutSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* A question, asked where the answer is --------------------------------- */
+
+/*
+ * Above the footer and in place of it: while something is being asked there
+ * are two things to press, and they are the two answers.
+ */
+.wp-flyout-confirm {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--wp-flyout-card-border);
+    background: #fff;
+    box-shadow: 0 -10px 30px rgba(17, 18, 20, 0.1);
+    animation: wpFlyoutRise 0.16s ease-out;
+}
+
+.wp-flyout.has-confirm .wp-flyout-footer {
+    display: none;
+}
+
+.wp-flyout-confirm-text {
+    display: flex;
+    flex: 1 1 200px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.wp-flyout-confirm-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-confirm-description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-confirm-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+}
+
+.wp-flyout-confirm-actions .button {
+    min-height: 40px;
+    margin: 0;
+    padding: 0 16px;
+    border-radius: var(--wp-flyout-control-radius);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 38px;
+}
+
+/* The answer that loses nothing is a button like the ones in the form. */
+.wp-flyout .wp-flyout-confirm-actions .button.wp-flyout-confirm-cancel {
+    border-color: var(--wp-flyout-control-border);
+    background: #fff;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout .wp-flyout-confirm-actions .button.wp-flyout-confirm-cancel:hover {
+    border-color: #a3a7ad;
+    background: #fafafa;
+}
+
+@keyframes wpFlyoutRise {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Saved ----------------------------------------------------------------- */
+
+/*
+ * Said once, quietly, and taken away: nothing to dismiss and nothing pushed
+ * down the form to make room for it.
+ */
+.wp-flyout-toast {
+    position: absolute;
+    bottom: 88px;
+    left: 50%;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 40px);
+    padding: 9px 16px 9px 12px;
+    border-radius: 999px;
+    background: var(--wp-flyout-text);
+    box-shadow: 0 8px 24px rgba(17, 18, 20, 0.22);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 8px);
+    transition: opacity 0.16s, transform 0.16s;
+}
+
+.wp-flyout-toast .sugarcommerce-icon {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+}
+
+.wp-flyout-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* What was wrong, beside what was wrong --------------------------------- */
+
+.wp-flyout-field-error {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #b32d2e;
+}
+
+.wp-flyout-field.wp-flyout-has-error:focus {
+    outline: 0;
+}
+
+.wp-flyout-body > .wp-flyout-alert {
+    margin: 0 0 16px;
+    border-radius: var(--wp-flyout-control-radius);
+}
+
+/* While the record is on its way ---------------------------------------- */
+
+/*
+ * Grey blocks where the title, a card and its fields are about to be, so
+ * the panel that arrives is the one that was already there, filled in.
+ */
+.wp-flyout-skeleton {
+    display: block;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #e9e9eb 25%, #f3f3f4 37%, #e9e9eb 63%);
+    background-size: 400% 100%;
+    animation: wpFlyoutShimmer 1.4s ease infinite;
+}
+
+.wp-flyout-skeleton-title {
+    width: 200px;
+    max-width: 60%;
+    height: 22px;
+}
+
+.wp-flyout-skeleton-card {
+    margin: 0 0 16px;
+    padding: 20px;
+    border: 1px solid var(--wp-flyout-card-border);
+    border-radius: var(--wp-flyout-card-radius);
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.03);
+}
+
+.wp-flyout-skeleton-heading {
+    width: 120px;
+    height: 14px;
+    margin-bottom: 20px;
+}
+
+.wp-flyout-skeleton-label {
+    width: 88px;
+    height: 10px;
+    margin-bottom: 8px;
+}
+
+.wp-flyout-skeleton-input {
+    height: 38px;
+    margin-bottom: 18px;
+    border-radius: var(--wp-flyout-control-radius);
+}
+
+.wp-flyout-skeleton-input--tall {
+    height: 76px;
+}
+
+.wp-flyout-skeleton-card > .wp-flyout-skeleton:last-child {
+    margin-bottom: 0;
+}
+
+@keyframes wpFlyoutShimmer {
+    from {
+        background-position: 100% 50%;
+    }
+
+    to {
+        background-position: 0 50%;
+    }
+}
+
+/* Two columns ----------------------------------------------------------- */
+
+/*
+ * A wide panel with `layout => 'split'`: the sections marked `aside` stand
+ * in a column of their own on the right, a third of the width, the way the
+ * editor keeps a post's settings beside the post. The page that holds the
+ * two columns is the space between them, as it is for a page of cards.
+ */
+.wp-flyout-tab-content.active:has(> .wp-flyout-split),
+.wp-flyout-form:not(:has(> .wp-flyout-tab-content)):has(> .wp-flyout-split) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.wp-flyout-split,
+.wp-flyout-split-main,
+.wp-flyout-split-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+/*
+ * Only where there is room for it. A medium panel is one column whatever it
+ * was asked for, and so is a wide one on a narrow screen: a third of six
+ * hundred pixels is not a column anybody can type in.
+ */
+@media screen and (min-width: 961px) {
+    .wp-flyout-large .wp-flyout-split,
+    .wp-flyout-full .wp-flyout-split {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    /* Nothing in a column that narrow is half its width. */
+    .wp-flyout-large .wp-flyout-split-aside .wp-flyout-section-fields > .wp-flyout-field:has(> .field-kit__field--half) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Narrow screens -------------------------------------------------------- */
+
+@media screen and (max-width: 600px) {
+    .wp-flyout-confirm-actions {
+        flex: 1 1 100%;
+    }
+
+    .wp-flyout-confirm-actions .button {
+        flex: 1 1 0;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .wp-flyout-menu-list {
+        max-width: calc(100vw - 40px);
+    }
+}
+
+/* For anyone who has asked for less movement ---------------------------- */
+
+/*
+ * The panel still arrives and the toast still appears; they just do not
+ * travel to get there. The spinner keeps turning, slowly, because it is the
+ * only thing saying that something is happening.
+ */
+@media (prefers-reduced-motion: reduce) {
+    .wp-flyout,
+    .wp-flyout.active,
+    .wp-flyout-overlay,
+    .wp-flyout-toast {
+        transition: none;
+    }
+
+    .wp-flyout-toast,
+    .wp-flyout-toast.is-visible {
+        transform: translate(-50%, 0);
+    }
+
+    .wp-flyout-confirm,
+    .wp-flyout-menu-list,
+    .wp-flyout-tab-content.active,
+    .wp-flyout-skeleton {
+        animation: none;
+    }
+
+    .wp-flyout-footer .button.is-busy::after,
+    .wp-flyout-header-actions .is-busy::after {
+        animation-duration: 2s;
+    }
+}
+
+
+/* ========================================
+   A RECORD, READ RATHER THAN FILLED IN
+   ======================================== */
+
+/*
+ * An order's panel is mostly things to read: who, what, how much, what
+ * happened. On their own cards those blocks no longer need the boxes, bars
+ * and capitals they each drew to hold themselves together, and with them
+ * gone the figures are what is left to look at.
+ */
+
+/* What a thing is called, in words rather than small capitals. */
+.wp-flyout-info-label {
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.wp-flyout-info-value {
+    font-weight: 500;
+}
+
+.wp-flyout-section .wp-flyout-info-grid {
+    margin: 0;
+}
+
+/* The lines of an order: a ruled list, with a quiet heading row. */
+.wp-flyout-section .wp-flyout-data-table {
+    border: 0;
+}
+
+.wp-flyout-section .wp-flyout-data-table th {
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--wp-flyout-card-border);
+    background: none;
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section .wp-flyout-data-table td {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f2;
+}
+
+.wp-flyout-section .wp-flyout-data-table th:not(:first-child),
+.wp-flyout-section .wp-flyout-data-table td:not(:first-child) {
+    padding-left: 16px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* What it came to: plain rows, and the total is the bold one. */
+.wp-flyout-section .wp-flyout-price-summary {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.wp-flyout-section .price-summary-details,
+.wp-flyout-section .price-summary-details tr,
+.wp-flyout-section .price-summary-footer,
+.wp-flyout-section .price-summary-total td {
+    border: 0;
+    background: none;
+}
+
+.wp-flyout-section .price-summary-table td {
+    padding: 4px 0;
+}
+
+.wp-flyout-section .price-summary-total td {
+    padding-top: 12px;
+    border-top: 1px solid var(--wp-flyout-card-border);
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-section .price-summary-total .label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-section .price-summary-total .amount {
+    font-size: 16px;
+    font-weight: 650;
+    color: var(--wp-flyout-text);
+}
+
+/* ========================================
+   SMALL THINGS THAT WERE THE WRONG SIZE
+   ======================================== */
+
+/*
+ * The count sits under the end of what it counts. It borrows the control's
+ * width class, and in a panel the control is the width of the panel while
+ * the class is still core's 25em -- so the number stopped two thirds of
+ * the way across, under nothing.
+ */
+.wp-flyout-body .field-kit__count {
+    width: 100%;
+    max-width: none;
+    margin-top: 4px;
+}
+
+/*
+ * A row of a one-field list is the field. The input inside it is not a
+ * second, taller field with an edge and a shadow of its own.
+ */
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row {
+    padding: 2px 8px 2px 2px;
+}
+
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row .field-kit__field input {
+    min-height: 34px;
+    padding: 4px 10px;
+    box-shadow: none;
+}
+
+.wp-flyout-body .field-kit__repeater--single li.field-kit__repeater-row .field-kit__field input:focus {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--wp-flyout-primary) 22%, transparent);
+}
+
+.wp-flyout-body .field-kit__repeater--single > .field-kit__repeater-rows[data-empty="false"] {
+    border-color: var(--wp-flyout-control-border);
+    border-radius: var(--wp-flyout-control-radius);
+}
+
+/*
+ * A choice between two or three things, as one control: a track, and the
+ * chosen one raised on it. Not the panel's colour -- choosing "New
+ * customer" is not the thing the panel is for.
+ */
+.wp-flyout-body .field-kit__button-group {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: #ebebed;
+}
+
+.wp-flyout-body .field-kit__button-group-option label,
+.wp-flyout-body .field-kit__button-group-option:first-child label,
+.wp-flyout-body .field-kit__button-group-option:last-child label {
+    margin: 0;
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-body .field-kit__button-group-option input:checked + label {
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(17, 18, 20, 0.14);
+    color: var(--wp-flyout-text);
+}
+
+/*
+ * A person, on one line.
+ *
+ * On a card of their own the header is not the top of a page, so it loses
+ * the rule under it and the size of a page title: a round face, the name
+ * with the address beneath, where they are at the far end, and what to do
+ * next underneath.
+ */
+.entity-header-image.shape-circle,
+.entity-header-icon.shape-circle {
+    border-radius: 50%;
+}
+
+.wp-flyout-section .entity-header {
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.wp-flyout-section .entity-header-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    align-items: center;
+}
+
+.wp-flyout-section .entity-header-title {
+    grid-column: 1;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.wp-flyout-section .entity-header-subtitle {
+    grid-column: 1;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.wp-flyout-section .entity-header-meta {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    justify-content: flex-end;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-section .entity-header-description {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section .entity-header-description a {
+    text-decoration: none;
+}
+
+.wp-flyout-section .entity-header-description a:hover {
+    text-decoration: underline;
+}
+
+/* What is under the person on the same card sits a little apart. */
+.wp-flyout-section .entity-header + .wp-flyout-info-grid {
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f2;
+}
+
+/*
+ * Giving money back, on a card of its own.
+ *
+ * The form used to hide behind a button of its own, which made sense when
+ * it sat in the middle of a page. On a card that is already folded away it
+ * meant opening the card to find one button, and pressing that to find the
+ * form -- so here the form is simply what the card holds. It is drawn like
+ * every other field on the panel, not as a grey box with small capitals.
+ */
+.wp-flyout-section .wp-flyout-refund-form {
+    margin: 0;
+}
+
+.wp-flyout-section .refund-trigger,
+.wp-flyout-section .refund-cancel {
+    display: none !important;
+}
+
+.wp-flyout-section .refund-panel {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+
+.wp-flyout-section .refund-summary {
+    margin: 0 0 16px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid #f0f0f2;
+    font-size: 13px;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section .refund-summary-value {
+    font-weight: 600;
+    color: var(--wp-flyout-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.wp-flyout-section .refund-field {
+    margin-bottom: 16px;
+}
+
+.wp-flyout-section .refund-field label {
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--wp-flyout-text);
+}
+
+/* The amount and its currency are one field. */
+.wp-flyout-section .refund-amount-wrap {
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    border: 1px solid var(--wp-flyout-control-border);
+    border-radius: var(--wp-flyout-control-radius);
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(17, 18, 20, 0.04);
+}
+
+.wp-flyout-section .refund-amount-wrap:focus-within {
+    border-color: var(--wp-flyout-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp-flyout-primary) 22%, transparent);
+}
+
+.wp-flyout-section .refund-currency-symbol {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border: 0;
+    border-right: 1px solid var(--wp-flyout-card-border);
+    background: var(--wp-flyout-surface);
+    font-size: 13px;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section .refund-amount-wrap .refund-amount-input,
+.wp-flyout-section .refund-amount-wrap .refund-amount-input:focus {
+    flex: 1 1 auto;
+    min-height: 36px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    outline: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.wp-flyout-section .refund-reason-select,
+.wp-flyout-section .refund-custom-input {
+    width: 100%;
+    max-width: none;
+}
+
+.wp-flyout-section .refund-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0;
+}
+
+/*
+ * A row that starts with a picture.
+ *
+ * For a table cell that names a thing which has an image -- a line of an
+ * order beside the product's picture. A consumer's column callback draws
+ * the three elements; this lays them out, and gives a thing with no
+ * picture a quiet square of the same size so the names stay in a column.
+ */
+.wp-flyout-with-thumb {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.wp-flyout-thumb {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--wp-flyout-card-border);
+    border-radius: 8px;
+    background: var(--wp-flyout-surface);
+    object-fit: cover;
+}
+
+.wp-flyout-thumb--none {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #a3a7ad;
+}
+
+.wp-flyout-thumb-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/*
+ * A rule between two halves of a row.
+ *
+ * A row lays its fields out as a wrapping line, where a bare <hr> has no
+ * width of its own: it took a line, drew nothing, and kept core's margins
+ * above and below -- a blank the height of a field. It takes the whole
+ * line, and is a hairline with a little air.
+ */
+.wp-flyout-body .field-kit__separator {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 0;
+    margin: 6px 0;
+    border: 0;
+    border-top: 1px solid var(--wp-flyout-card-border);
+}
+
+/*
+ * A label and its help icon share a line, and the line has the space under
+ * it. The label kept its own margin there, which made the row taller than
+ * the words -- so an icon centred on the row sat a couple of pixels below
+ * the text it belongs to.
+ */
+.wp-flyout-body .field-kit__label-row {
+    margin-bottom: 6px;
+}
+
+.wp-flyout-body .field-kit__field > .field-kit__label-row > label,
+.wp-flyout-body .wp-flyout-field .field-kit__label-row > label {
+    margin-bottom: 0;
+}
+
+.wp-flyout-body .field-kit__label-row .field-kit__tooltip {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: 2px;
+}
+
+/*
+ * A currency sign sits just ahead of the figure it belongs to.
+ *
+ * The fields package lays the sign over the input and pads the input to clear it, for
+ * a settings screen where the two are separate boxes. Here they are one
+ * field drawn by the wrapper, the sign is a flex item in the row, and the
+ * input needs no room kept for it -- so whatever the sign is, "$" or "CHF",
+ * the figure starts just after it, with nothing measured.
+ *
+ * Both rules out-rank the fields package's own (`.wp-core-ui .field-kit__money input
+ * .field-kit__money-value`, and its `--wide` twin). They used to tie with
+ * them, and a tie goes to whichever stylesheet loads last: in a panel
+ * where the fields package's came second, an unfocused price had the fields package's 2.75rem of
+ * padding after a sign that no longer needed it -- "£" at one end and the
+ * figure an inch away -- and only the `:focus` copy of this rule, one
+ * class heavier, put it right. Logical properties, so the same holds in a
+ * right-to-left admin, where `padding-left` was the wrong side entirely.
+ */
+.wp-flyout-body .field-kit__money > .field-kit__money-symbol.field-kit__money-symbol {
+    position: static;
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0;
+    padding-inline-start: 12px;
+}
+
+.wp-flyout-body .field-kit__money > .field-kit__money-symbol + input.field-kit__money-value {
+    padding-inline-start: 6px;
+    padding-inline-end: 12px;
+}
+
+/*
+ * Figures on a card.
+ *
+ * A row of stats drew each figure in a bordered box of its own, with its
+ * label in small capitals. On a card that is a box inside a box three times
+ * over; the card is the box, so the figures are simply set out across it,
+ * ruled apart, with their labels written as words.
+ */
+.wp-flyout-section .wp-flyout-stats {
+    margin: 0;
+}
+
+.wp-flyout-section .wp-flyout-stats .stats-grid {
+    gap: 0;
+}
+
+.wp-flyout-section .wp-flyout-stats .stat-card,
+.wp-flyout-section .wp-flyout-stats .stat-card:hover {
+    padding: 0 16px;
+    border: 0;
+    border-left: 1px solid #f0f0f2;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+}
+
+.wp-flyout-section .wp-flyout-stats .stat-card:first-child {
+    padding-left: 0;
+    border-left: 0;
+}
+
+.wp-flyout-section .wp-flyout-stats .stat-label {
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section .wp-flyout-stats .stat-value {
+    font-size: 20px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--wp-flyout-text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* The badge beside a panel's title takes the same edge as a badge in a
+   list: its own colour, a quarter strength. */
+.wp-flyout-badge {
+    border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+}
+
+/* A title that is something to copy -------------------------------------- */
+
+/*
+ * Beside the title and smaller than the buttons at the end of the header:
+ * it belongs to the words it copies, not to the panel.
+ */
+.wp-flyout-copy {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: 0 -2px 0 -4px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--wp-flyout-control-radius);
+    background: none;
+    color: var(--wp-flyout-text-muted);
+    cursor: pointer;
+    transition: background-color 0.12s, color 0.12s;
+}
+
+.wp-flyout-copy:hover {
+    background: #ebebed;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-copy:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: -2px;
+}
+
+.wp-flyout-copy .sugarcommerce-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+}
+
+/* A row with two lines and something to do ------------------------------ */
+
+/*
+ * For a table cell that names a thing and says a little about it: where a
+ * licence is activated, and since when. A consumer's column callback draws
+ * the two lines; a row that is over and done with is marked `is-muted`.
+ */
+.wp-flyout-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.wp-flyout-stack-title {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.wp-flyout-stack-meta {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-stack.is-muted .wp-flyout-stack-title {
+    font-weight: 400;
+    text-decoration: line-through;
+    color: var(--wp-flyout-text-muted);
+}
+
+/* Working: the same spinner the footer's buttons show, over a label that
+   keeps its place. */
+.wp-flyout-row-action.is-busy {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.wp-flyout-row-action.is-busy::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border: 2px solid var(--wp-flyout-text-muted);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: wpFlyoutSpin 0.7s linear infinite;
+}
+
+/* A figure over the list it counts sits a little apart from it. */
+.wp-flyout-section .wp-flyout-stats + .datatable-wrapper {
+    margin-top: 16px;
+}
+
+/* Tabs: the same pills the reports and the settings use ------------------ */
+
+/*
+ * One language for "which part am I looking at" across the admin: a row of
+ * quiet pills, the current one filled grey and bold. Not the theme-colour
+ * fill the phone layouts of those screens use -- in a panel that colour is
+ * Save's, a few hundred pixels below, and two filled blue things on one
+ * small surface read as two things to press.
+ *
+ * One row, always. Tabs that do not fit scroll sideways and never wrap to a
+ * second line under the header.
+ */
+.wp-flyout-tab-nav {
+    gap: 4px;
+    padding: 8px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.wp-flyout-tab-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.wp-flyout-tab,
+.wp-flyout-tab:first-child {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+    white-space: nowrap;
+    color: #2c3338;
+}
+
+.wp-flyout-tab:hover {
+    border: 0;
+    background: #f6f7f7;
+    color: var(--wp-flyout-primary);
+}
+
+.wp-flyout-tab.active,
+.wp-flyout-tab.active:hover {
+    border: 0;
+    background: #f0f0f1;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+/* Inside the pill, for the reason the reports' have: the row can scroll,
+   and a ring outside it would be cut off at the edge. */
+.wp-flyout-tab:focus,
+.wp-flyout-tab:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: -2px;
+}
+
+.wp-flyout-tab:focus:not(:focus-visible) {
+    outline: 0;
+}
+
+@media screen and (max-width: 782px) {
+    .wp-flyout-tab-nav {
+        padding: 8px 16px;
+    }
+}
+
+/* Header: who or what this is -------------------------------------------- */
+
+/*
+ * A panel that declares a `header` says who it is about in the header
+ * itself: a picture, the name and its state on one line, the address under
+ * it with a quiet fact or two. Everything here hangs off that opt-in, so a
+ * panel without one is untouched.
+ */
+.wp-flyout-header--identity {
+    align-items: center;
+}
+
+/* The corner an avatar has in a list table, so the row and its panel show
+   the same face in the same shape. */
+.wp-flyout-avatar {
+    display: flex;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: 20%;
+    background: #ebebed;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wp-flyout-avatar .sugarcommerce-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+}
+
+/* One line: the name gives way, and the badge is never pushed under it. */
+.wp-flyout-header--identity .wp-flyout-title-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+.wp-flyout-header--identity .wp-flyout-title {
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wp-flyout-header--identity .wp-flyout-subtitle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+    min-width: 0;
+}
+
+.wp-flyout-subtitle-line {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* An address is something to select and paste, so it is one unbroken run
+   that shortens rather than wraps. */
+.wp-flyout-subtitle-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: all;
+}
+
+.wp-flyout-subtitle .wp-flyout-copy {
+    width: 24px;
+    height: 24px;
+    margin: -2px 0 -2px 2px;
+}
+
+.wp-flyout-subtitle .wp-flyout-copy .sugarcommerce-icon {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+}
+
+.wp-flyout-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+}
+
+/*
+ * A dot between the facts under a name -- "£35.99 / month · Renews in 2
+ * days · Paid by card" -- rather than a gap: spaced out alone, separate
+ * facts read as one long phrase. Drawn by CSS so the markup stays the
+ * facts themselves, and given empty alternative text so a screen reader
+ * does not read "dot" between them.
+ */
+.wp-flyout-subtitle-line + .wp-flyout-meta > .wp-flyout-meta-item:first-child::before,
+.wp-flyout-meta-item + .wp-flyout-meta-item::before {
+    content: "\00B7";
+    content: "\00B7" / "";
+    margin-inline-start: 6px;
+    color: #a0a3a8;
+    font-weight: 700;
+}
+
+.wp-flyout-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.wp-flyout-meta-image {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.2));
+}
+
+.wp-flyout-meta-item .sugarcommerce-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+}
+
+/*
+ * Previous and next, quieter than the menu and the close button beside
+ * them: narrower, a smaller glyph, a lighter grey. They are a convenience
+ * for somebody working down a list, and should not be what the eye lands
+ * on in a header that is about one record.
+ */
+.wp-flyout-header-actions .wp-flyout-steps--quiet {
+    margin: 0 2px;
+}
+
+.wp-flyout-header-actions .wp-flyout-steps--quiet button.wp-flyout-step {
+    width: 28px;
+    color: #a0a3a8;
+}
+
+.wp-flyout-header-actions .wp-flyout-steps--quiet .sugarcommerce-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+}
+
+@media screen and (max-width: 600px) {
+    .wp-flyout-header--identity {
+        gap: 10px;
+    }
+
+    .wp-flyout-header--identity .wp-flyout-header-actions {
+        gap: 0;
+    }
+
+    /*
+     * No previous and next on a phone. Two more buttons there leave the
+     * name a few letters and an ellipsis, and the name is what the header
+     * is for; the list is one tap away behind the close button.
+     */
+    .wp-flyout-header-actions .wp-flyout-steps--quiet {
+        display: none;
+    }
+}
+
+/* A footer that waits until there is something to save -------------------- */
+
+/*
+ * For a record that is read far more often than it is changed. Save and
+ * Cancel stay out of the way until the form has a change in it, a folded
+ * card has been opened to make one, or a question is being asked there.
+ */
+.wp-flyout-footer-when-editing:not(.is-dirty):not(.has-confirm):not(:has(.wp-flyout-section--collapsible[open])) > .wp-flyout-footer {
+    display: none;
+}
+
+/* The form an action asks for ------------------------------------------- */
+
+.wp-flyout-prompt-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 72px 20px 20px;
+    overflow-y: auto;
+    background: rgba(17, 18, 20, 0.38);
+    animation: wpFlyoutFadeIn 0.12s ease-out;
+}
+
+.wp-flyout-prompt {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 520px;
+    padding: 20px;
+    border-radius: var(--wp-flyout-card-radius);
+    background: #fff;
+    box-shadow: 0 18px 50px rgba(17, 18, 20, 0.28);
+}
+
+.wp-flyout-prompt-title {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-prompt-description {
+    margin: -10px 0 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-prompt-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.wp-flyout-prompt-label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--wp-flyout-text);
+}
+
+/* What is already decided: said on one line, and not a box to type in. */
+.wp-flyout-prompt-field--static {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f2;
+}
+
+.wp-flyout-prompt-field--static .wp-flyout-prompt-label {
+    flex: 0 0 auto;
+    margin: 0;
+    font-weight: 400;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-prompt-static {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-prompt .wp-flyout-prompt-control {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    min-height: 40px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--wp-flyout-control-border);
+    border-radius: var(--wp-flyout-control-radius);
+    background: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-prompt textarea.wp-flyout-prompt-control {
+    min-height: 160px;
+    resize: vertical;
+}
+
+.wp-flyout-prompt .wp-flyout-prompt-control:focus {
+    border-color: var(--wp-flyout-primary);
+    box-shadow: 0 0 0 1px var(--wp-flyout-primary);
+    outline: 0;
+}
+
+.wp-flyout-prompt .wp-flyout-prompt-control[aria-invalid="true"] {
+    border-color: var(--wp-flyout-error);
+}
+
+.wp-flyout-prompt-note,
+.wp-flyout-prompt-field-error {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-prompt-field-error {
+    color: #b32d2e;
+}
+
+.wp-flyout-prompt-error {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: var(--wp-flyout-control-radius);
+    background: var(--wp-flyout-error-bg);
+    font-size: 13px;
+    line-height: 1.5;
+    color: #8a2424;
+}
+
+.wp-flyout-prompt-error[hidden],
+.wp-flyout-prompt-ask[hidden],
+.wp-flyout-prompt-actions[hidden] {
+    display: none;
+}
+
+.wp-flyout-prompt-actions,
+.wp-flyout-prompt-ask {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.wp-flyout-prompt-ask-text {
+    flex: 1 1 auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-prompt-actions .button,
+.wp-flyout-prompt-ask .button {
+    min-height: 40px;
+    margin: 0;
+    padding: 0 16px;
+    border-radius: var(--wp-flyout-control-radius);
+    font-size: 14px;
+    line-height: 38px;
+}
+
+.wp-flyout-prompt .wp-flyout-prompt-actions .button.wp-flyout-prompt-cancel {
+    border: 0;
+    background: none;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-prompt .wp-flyout-prompt-actions .button.wp-flyout-prompt-cancel:hover {
+    background: #ebebed;
+    color: var(--wp-flyout-text);
+}
+
+.wp-flyout-prompt-actions .wp-flyout-prompt-cancel:focus-visible {
+    box-shadow: none;
+    outline: 2px solid var(--wp-flyout-primary);
+    outline-offset: -2px;
+}
+
+/* Sending: the footer's spinner, over a label that keeps its place. */
+.wp-flyout-prompt .button.is-busy {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+}
+
+.wp-flyout-prompt .button.is-busy::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #fff;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: wpFlyoutSpin 0.7s linear infinite;
+}
+
+@media screen and (max-width: 600px) {
+    .wp-flyout-prompt-layer {
+        padding: 56px 12px 12px;
+    }
+
+    .wp-flyout-prompt {
+        padding: 16px;
+    }
+
+    /* A box that zooms the page when it is tapped is a box under 16px. */
+    .wp-flyout-prompt .wp-flyout-prompt-control {
+        font-size: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wp-flyout-prompt-layer {
+        animation: none;
+    }
+
+    .wp-flyout-prompt .button.is-busy::after {
+        animation-duration: 2s;
+    }
+}
+
+/* Figures on a card, at every width ------------------------------------- */
+
+/*
+ * Three across while there is room for three, and one to a row when there
+ * is not. Never two and one: a figure left alone on a second row reads as
+ * a different kind of figure. The rule between them turns with them.
+ */
+.wp-flyout-section .wp-flyout-stats.columns-3 .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wp-flyout-section .wp-flyout-stats.columns-4 .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.wp-flyout-section .wp-flyout-stats .stat-change,
+.wp-flyout-section .wp-flyout-stats .stat-footer {
+    margin: 2px 0 0;
+    padding: 0;
+    border: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--wp-flyout-text-muted);
+}
+
+@media screen and (max-width: 600px) {
+    .wp-flyout-section .wp-flyout-stats.columns-3 .stats-grid,
+    .wp-flyout-section .wp-flyout-stats.columns-4 .stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* The label on the left; the figure on the right, with whatever is
+       said about it under the figure. */
+    .wp-flyout-section .wp-flyout-stats .stat-card,
+    .wp-flyout-section .wp-flyout-stats .stat-card:hover {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 12px;
+        padding: 10px 0;
+        border-left: 0;
+        border-top: 1px solid #f0f0f2;
+    }
+
+    .wp-flyout-section .wp-flyout-stats .stat-header {
+        grid-row: 1 / span 2;
+        margin: 0;
+    }
+
+    .wp-flyout-section .wp-flyout-stats .stat-body,
+    .wp-flyout-section .wp-flyout-stats .stat-footer {
+        grid-column: 2;
+        margin: 0;
+        text-align: right;
+    }
+
+    .wp-flyout-section .wp-flyout-stats .stat-card:first-child {
+        padding-top: 0;
+        border-top: 0;
+    }
+
+    .wp-flyout-section .wp-flyout-stats .stat-card:last-child {
+        padding-bottom: 0;
+    }
+
+    .wp-flyout-section .wp-flyout-stats .stat-value {
+        font-size: 17px;
+    }
+}
+
+/* A table of records ----------------------------------------------------- */
+
+/*
+ * Orders on a customer, uses of a discount: a row a record, the first cell
+ * a link to it. `wp-flyout-records` on the table keeps every row one line
+ * high; on a column, `wp-flyout-col-text` is words that start at the left
+ * and shorten with an ellipsis, `wp-flyout-col-quiet` is a date or a note
+ * in grey, and a column with neither is a figure, set right.
+ */
+.wp-flyout-section .wp-flyout-records {
+    table-layout: auto;
+}
+
+.wp-flyout-section .wp-flyout-records th,
+.wp-flyout-section .wp-flyout-records td {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.wp-flyout-section .wp-flyout-records td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.wp-flyout-section .wp-flyout-records tbody tr:hover {
+    background: none;
+}
+
+.wp-flyout-section .wp-flyout-records a {
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.wp-flyout-section .wp-flyout-records a:hover {
+    text-decoration: underline;
+}
+
+.wp-flyout-section .wp-flyout-data-table th.wp-flyout-col-text,
+.wp-flyout-section .wp-flyout-data-table td.wp-flyout-col-text {
+    width: 99%;
+    max-width: 0;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+}
+
+.wp-flyout-section .wp-flyout-data-table td.wp-flyout-col-quiet {
+    color: var(--wp-flyout-text-muted);
+}
+
+.wp-flyout-section .wp-flyout-data-table th.wp-flyout-col-left,
+.wp-flyout-section .wp-flyout-data-table td.wp-flyout-col-left {
+    text-align: left;
+}
+
+/* The way to the rest of them, under the last row. */
+.wp-flyout-more {
+    margin: 12px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.wp-flyout-more a {
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.wp-flyout-more a:hover,
+.wp-flyout-more .button-link:hover {
+    text-decoration: underline;
+}
+
+.wp-flyout-more .button-link {
+    font-size: inherit;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+/* The record a row is about is the link that stands out; a name beside it
+   opens something too, and reads as a name. */
+.wp-flyout-section .wp-flyout-records .wp-flyout-col-text a {
+    font-weight: 400;
+    color: inherit;
+}
+
+.wp-flyout-section .wp-flyout-records .wp-flyout-col-text a:hover,
+.wp-flyout-section .wp-flyout-records .wp-flyout-col-text a:focus {
+    color: var(--wp-flyout-primary);
+}
+
+@media screen and (max-width: 600px) {
+    /* The column that can best be done without on a phone. */
+    .wp-flyout-section .wp-flyout-data-table .wp-flyout-col-wide-only {
+        display: none;
+    }
+}
+
+/* Tags beside the badge ---------------------------------------------------- */
+
+/*
+ * A record's own labels, in the title row after its state. They give way
+ * before the name does, and never wrap the row: a panel with a dozen tags
+ * shows what fits.
+ */
+.wp-flyout-tags {
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.wp-flyout-tags > * {
+    flex: 0 0 auto;
+}
+
+/* Markup a plugin drew --------------------------------------------------- */
+
+/* Empty until an action draws something into it. */
+.wp-flyout-markup:empty {
+    display: none;
+}
+
+/* The link to the rest of a list sits close under the list. */
+.wp-flyout-markup > .wp-flyout-more {
+    margin-top: -4px;
+}

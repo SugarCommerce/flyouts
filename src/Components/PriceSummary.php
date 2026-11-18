@@ -1,0 +1,229 @@
+<?php
+/**
+ * PriceSummary Component
+ *
+ * Displays a summary of prices with line items and totals.
+ *
+ * @package     SugarCommerce\Flyouts\Components
+ * @copyright   Copyright (c) 2025, ArrayPress Limited
+ * @license     GPL2+
+ */
+
+declare( strict_types=1 );
+
+namespace SugarCommerce\Flyouts\Components;
+
+use SugarCommerce\Flyouts\Renderable;
+use SugarCommerce\Flyouts\Utils\Amount;
+use SugarCommerce\Money\Money;
+
+class PriceSummary implements Renderable {
+
+    /**
+     * Component configuration
+     *
+     * @var array
+     */
+    private array $config;
+
+    /**
+     * Constructor
+     *
+     * @param array $config Configuration options
+     */
+    public function __construct( array $config = [] ) {
+        $this->config = wp_parse_args( $config, self::get_defaults() );
+
+        if ( empty( $this->config['id'] ) ) {
+            $this->config['id'] = 'price-summary-' . wp_generate_uuid4();
+        }
+    }
+
+    /**
+     * Get default configuration
+     *
+     * @return array
+     */
+    private static function get_defaults(): array {
+        return [
+			'id'       => '',
+			'items'    => [],
+			'subtotal' => null,
+			'discount' => null,
+			'tax'      => null,
+			'total'    => 0,
+			'refunded' => null,
+			'currency' => 'USD',
+			'class'    => '',
+
+			// The unit every amount is in: `major` (148.00) or `minor`
+			// (14800). See Utils\Amount.
+			'money'    => Amount::MAJOR,
+        ];
+    }
+
+    /**
+     * Render the component
+     *
+     * @return string
+     */
+    public function render(): string {
+        $classes = [ 'wp-flyout-price-summary' ];
+        if ( ! empty( $this->config['class'] ) ) {
+            $classes[] = $this->config['class'];
+        }
+
+        ob_start();
+        ?>
+        <div id="<?php echo esc_attr( $this->config['id'] ); ?>"
+            class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
+
+            <table class="price-summary-table">
+                <?php if ( ! empty( $this->config['items'] ) ) : ?>
+                    <tbody class="price-summary-items">
+                    <?php foreach ( $this->config['items'] as $item ) : ?>
+                        <?php $this->render_line_item( $item ); ?>
+                    <?php endforeach; ?>
+                    </tbody>
+                <?php endif; ?>
+
+                <?php if ( $this->has_summary_lines() ) : ?>
+                    <tbody class="price-summary-details">
+                    <?php $this->render_summary_lines(); ?>
+                    </tbody>
+                <?php endif; ?>
+
+                <?php if ( $this->config['total'] !== null ) : ?>
+                    <tfoot class="price-summary-footer">
+                    <tr class="price-summary-total">
+                        <td class="label"><?php esc_html_e( 'Total', 'sugarcommerce' ); ?></td>
+                        <td class="amount">
+                            <?php echo esc_html( $this->money( $this->config['total'] ) ); ?>
+                        </td>
+                    </tr>
+                    <?php if ( $this->has_refund() ) : ?>
+                        <tr class="price-summary-refunded">
+                            <td class="label"><?php esc_html_e( 'Refunded', 'sugarcommerce' ); ?></td>
+                            <td class="amount negative">
+                                <?php echo esc_html( $this->money( - (float) $this->config['refunded'] ) ); ?>
+                            </td>
+                        </tr>
+                        <tr class="price-summary-net">
+                            <td class="label"><?php esc_html_e( 'Net', 'sugarcommerce' ); ?></td>
+                            <td class="amount">
+                                <?php echo esc_html( $this->money( (float) $this->config['total'] - (float) $this->config['refunded'] ) ); ?>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                    </tfoot>
+                <?php endif; ?>
+            </table>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Check if we have summary lines to render
+     *
+     * @return bool
+     */
+    private function has_summary_lines(): bool {
+        return $this->config['subtotal'] !== null ||
+                $this->config['discount'] !== null ||
+                $this->config['tax'] !== null;
+    }
+
+    /**
+     * Check if we have a refund to display
+     *
+     * @return bool
+     */
+    private function has_refund(): bool {
+        return $this->config['refunded'] !== null && $this->config['refunded'] > 0;
+    }
+
+    /**
+     * Render a line item
+     *
+     * @param array $item Item configuration
+     */
+    private function render_line_item( array $item ): void {
+        $label       = $item['label'] ?? '';
+        $amount      = $item['amount'] ?? 0;
+        $quantity    = $item['quantity'] ?? null;
+        $description = $item['description'] ?? '';
+
+        if ( empty( $label ) ) {
+            return;
+        }
+
+        ?>
+        <tr class="price-summary-item">
+            <td class="item-label">
+                <?php echo esc_html( $label ); ?>
+                <?php if ( $quantity !== null && $quantity > 1 ) : ?>
+                    <span class="item-quantity">× <?php echo esc_html( $quantity ); ?></span>
+                <?php endif; ?>
+                <?php if ( ! empty( $description ) ) : ?>
+                    <span class="item-description"><?php echo esc_html( $description ); ?></span>
+                <?php endif; ?>
+            </td>
+            <td class="item-amount">
+                <?php echo esc_html( $this->money( $amount ) ); ?>
+            </td>
+        </tr>
+        <?php
+    }
+
+    /**
+     * Render summary lines (subtotal, discount, tax)
+     */
+    private function render_summary_lines(): void {
+        $lines = [
+			'subtotal' => __( 'Subtotal', 'sugarcommerce' ),
+			'discount' => __( 'Discount', 'sugarcommerce' ),
+			'tax'      => __( 'Tax', 'sugarcommerce' ),
+        ];
+
+        foreach ( $lines as $key => $label ) {
+            if ( $this->config[ $key ] === null ) {
+                continue;
+            }
+
+            $amount = $this->config[ $key ];
+
+            // Show discounts as negative
+            if ( $key === 'discount' && $amount > 0 ) {
+                $amount = - $amount;
+            }
+
+            ?>
+            <tr class="price-summary-<?php echo esc_attr( $key ); ?>">
+                <td class="label"><?php echo esc_html( $label ); ?></td>
+                <td class="amount <?php echo $amount < 0 ? 'negative' : ''; ?>">
+                    <?php echo esc_html( $this->money( $amount ) ); ?>
+                </td>
+            </tr>
+            <?php
+        }
+    }
+
+    /**
+     * Format an amount for display.
+     *
+     * Amounts arrive in the unit `money` names, major by default -- see
+     * Utils\Amount for why that is a stated contract rather than something
+     * inferred per value.
+     *
+     * @param mixed $amount Amount in the component's unit.
+     *
+     * @return string
+     */
+    private function money( $amount ): string {
+        return Money::format(
+            Amount::minor( $amount, $this->config['currency'], Amount::unit( $this->config['money'] ) ),
+            [ 'currency' => $this->config['currency'] ]
+        );
+    }
+}

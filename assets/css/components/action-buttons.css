@@ -1,0 +1,71 @@
+/**
+ * WP Flyout - Action Buttons Component
+ * Styles for action buttons with AJAX functionality
+ */
+
+.wp-flyout-action-buttons {
+    margin: 20px 0;
+    display: flex;
+    gap: 12px;
+}
+
+/* Layout variations */
+.wp-flyout-action-buttons.layout-stacked {
+    flex-direction: column;
+}
+
+.wp-flyout-action-buttons.layout-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+/* Alignment variations */
+.wp-flyout-action-buttons.align-center {
+    justify-content: center;
+}
+
+.wp-flyout-action-buttons.align-right {
+    justify-content: flex-end;
+}
+
+.wp-flyout-action-buttons.align-justify {
+    justify-content: space-between;
+}
+
+/*
+ * The button itself is core's, and the fields package draws it. What is left here is the
+ * bar it sits in and the two things core does not decide: an icon beside a
+ * label, and what a button looks like while it is working.
+ *
+ * Gone with it: `button-danger`, `button-success` and `button-warning`, which
+ * were hardcoded red, green and amber fills. Core has no such buttons — two
+ * weights and one destructive treatment is the whole vocabulary — and a fixed
+ * hex ignores whatever admin colour scheme the user picked. `destructive` is
+ * the fields package's, which is core's own.
+ */
+.wp-flyout-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.5;
+}
+
+.wp-flyout-action-btn .sugarcommerce-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .wp-flyout-action-buttons:not(.layout-inline) {
+        flex-direction: column;
+    }
+
+    .wp-flyout-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

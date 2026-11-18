@@ -1,0 +1,145 @@
+<?php
+/**
+ * ActionButtons Component
+ *
+ * Renders action buttons with REST API callback functionality.
+ * Supports confirmations, loading states, and automatic success/error handling.
+ *
+ * @package     SugarCommerce\Flyouts\Components
+ * @copyright   Copyright (c) 2025, ArrayPress Limited
+ * @license     GPL2+
+ */
+
+declare( strict_types=1 );
+
+namespace SugarCommerce\Flyouts\Components;
+
+use SugarCommerce\Fields\Support\Button;
+use SugarCommerce\Flyouts\Renderable;
+
+class ActionButtons implements Renderable {
+
+    /**
+     * Component configuration
+     *
+     * @var array
+     */
+    private array $config;
+
+    /**
+     * Constructor
+     *
+     * @param array $config Configuration options
+     */
+    public function __construct( array $config = [] ) {
+        $this->config = wp_parse_args( $config, self::get_defaults() );
+
+        if ( empty( $this->config['id'] ) ) {
+            $this->config['id'] = 'action-buttons-' . wp_generate_uuid4();
+        }
+    }
+
+    /**
+     * Get default configuration
+     *
+     * @return array
+     */
+    private static function get_defaults(): array {
+        return [
+			'id'      => '',
+			'buttons' => [],
+			'layout'  => 'inline', // inline, stacked, grid
+			'align'   => 'left',   // left, center, right, justify
+			'class'   => '',
+        ];
+    }
+
+    /**
+     * Render the component
+     *
+     * @return string
+     */
+    public function render(): string {
+        if ( empty( $this->config['buttons'] ) ) {
+            return '';
+        }
+
+        $classes = [
+			'wp-flyout-action-buttons',
+			'layout-' . $this->config['layout'],
+			'align-' . $this->config['align'],
+        ];
+
+        if ( ! empty( $this->config['class'] ) ) {
+            $classes[] = $this->config['class'];
+        }
+
+        ob_start();
+        ?>
+        <div id="<?php echo esc_attr( $this->config['id'] ); ?>"
+            class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
+            <?php foreach ( $this->config['buttons'] as $button ) : ?>
+                <?php $this->render_button( $button ); ?>
+            <?php endforeach; ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render single button
+     *
+     * @param array $button Button configuration
+     */
+    private function render_button( array $button ): void {
+        $defaults = [
+			'text'    => '',
+			'action'  => '',
+			'style'   => 'secondary', // primary, secondary, link, destructive
+			'data'    => [],
+			'confirm' => '',
+			'enabled' => true,
+        ];
+
+        $button = wp_parse_args( $button, $defaults );
+
+        if ( empty( $button['text'] ) || empty( $button['action'] ) ) {
+            return;
+        }
+
+        // No per-button nonce: the REST one is global.
+        $data = [ 'action' => $button['action'] ];
+
+        if ( ! empty( $button['confirm'] ) ) {
+            $data['confirm'] = $button['confirm'];
+        }
+
+        foreach ( $button['data'] as $key => $value ) {
+            $data[ $key ] = $value;
+        }
+
+        $attributes = [];
+
+        foreach ( $data as $key => $value ) {
+            $attributes[ 'data-' . $key ] = (string) $value;
+        }
+
+        // No icon. Every button here has text -- one without is skipped
+        // above -- and the fields package draws no glyph beside a label, for the same
+        // reason core does not: the label already says it.
+        $html = Button::render(
+            [
+                'label'      => $button['text'],
+                'variant'    => $button['style'],
+                'class'      => 'wp-flyout-action-btn',
+                'disabled'   => ! $button['enabled'],
+                'spinner'    => true,
+                'attributes' => $attributes,
+            ]
+        );
+
+        // The fields package escapes the label and the attributes; the rest is its own
+        // markup.
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    }
+}

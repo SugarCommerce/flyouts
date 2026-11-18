@@ -1,0 +1,201 @@
+<?php
+/**
+ * DataTable Component
+ *
+ * Renders structured data in a clean table format.
+ *
+ * @package     SugarCommerce\Flyouts\Components
+ * @copyright   Copyright (c) 2025, ArrayPress Limited
+ * @license     GPL2+
+ */
+
+declare( strict_types=1 );
+
+namespace SugarCommerce\Flyouts\Components;
+
+use SugarCommerce\Flyouts\Renderable;
+use SugarCommerce\Fields\Support\Display;
+
+class DataTable implements Renderable {
+
+    /**
+     * Component configuration
+     *
+     * @var array
+     */
+    private array $config;
+
+    /**
+     * Constructor
+     *
+     * @param array $config Configuration options
+     */
+    public function __construct( array $config = [] ) {
+        $this->config = wp_parse_args( $config, self::get_defaults() );
+
+        if ( empty( $this->config['id'] ) ) {
+            $this->config['id'] = 'datatable-' . wp_generate_uuid4();
+        }
+    }
+
+    /**
+     * Say so when the rows were handed over under the wrong name.
+     *
+     * They go in `data`. Given `items` or `rows` -- both of which the other
+     * components here use for exactly this -- the table draws its own empty
+     * state, and "No data found." reads as an order with nothing on it rather
+     * than as a key spelled wrong. That is a worse failure than an error,
+     * because it looks like an answer.
+     *
+     * @return void
+     */
+    private function warn_about_the_rows_key(): void {
+        if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG || ! function_exists( '_doing_it_wrong' ) ) {
+            return;
+        }
+
+        if ( ! empty( $this->config['data'] ) ) {
+            return;
+        }
+
+        foreach ( [ 'items', 'rows' ] as $wrong ) {
+            if ( empty( $this->config[ $wrong ] ) ) {
+                continue;
+            }
+
+            _doing_it_wrong(
+                __METHOD__,
+                sprintf(
+                    /* translators: %s: the key the rows were given under */
+                    esc_html__( 'A data table was given its rows as "%s". The key is "data"; the table will render as empty.', 'sugarcommerce' ),
+                    esc_html( $wrong )
+                ),
+                '1.0.0'
+            );
+
+            return;
+        }
+    }
+
+    /**
+     * Get default configuration
+     *
+     * @return array
+     */
+    private static function get_defaults(): array {
+        return [
+			'id'          => '',
+			'class'       => '',
+			'columns'     => [],
+			'data'        => [],
+			'empty_text'  => __( 'No data found.', 'sugarcommerce' ),
+			'empty_value' => '—',
+        ];
+    }
+
+    /**
+     * Render the component
+     *
+     * @return string
+     */
+    public function render(): string {
+        $this->warn_about_the_rows_key();
+
+        if ( empty( $this->config['columns'] ) ) {
+            return '';
+        }
+
+        $classes = [ 'wp-flyout-data-table' ];
+        if ( ! empty( $this->config['class'] ) ) {
+            $classes[] = $this->config['class'];
+        }
+
+        ob_start();
+        ?>
+        <div class="datatable-wrapper">
+            <table id="<?php echo esc_attr( $this->config['id'] ); ?>"
+                    class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
+
+                <thead>
+                <tr>
+                    <?php foreach ( $this->config['columns'] as $key => $column ) : ?>
+                        <?php $this->render_header_cell( $key, $column ); ?>
+                    <?php endforeach; ?>
+                </tr>
+                </thead>
+
+                <tbody>
+                <?php if ( ! empty( $this->config['data'] ) ) : ?>
+                    <?php foreach ( $this->config['data'] as $row ) : ?>
+                        <tr>
+                            <?php foreach ( $this->config['columns'] as $key => $column ) : ?>
+                                <?php $this->render_body_cell( $key, $column, $row ); ?>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="<?php echo count( $this->config['columns'] ); ?>" class="empty-row">
+                            <?php echo esc_html( $this->config['empty_text'] ); ?>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render header cell
+     *
+     * @param string $key    Column key
+     * @param mixed  $column Column config
+     */
+    private function render_header_cell( string $key, $column ): void {
+        $label = is_array( $column ) ? ( $column['label'] ?? $key ) : $column;
+        $class = is_array( $column ) ? ( $column['class'] ?? '' ) : '';
+        $width = is_array( $column ) ? ( $column['width'] ?? '' ) : '';
+
+        $attrs = [];
+        if ( $class ) {
+            $attrs[] = 'class="' . esc_attr( $class ) . '"';
+        }
+        if ( $width ) {
+            $attrs[] = 'style="width: ' . esc_attr( $width ) . '"';
+        }
+        ?>
+        <th <?php echo implode( ' ', $attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+            <?php echo esc_html( $label ); ?>
+        </th>
+        <?php
+    }
+
+    /**
+     * Render body cell
+     *
+     * @param string $key    Column key
+     * @param mixed  $column Column config
+     * @param array  $row    Row data
+     */
+    private function render_body_cell( string $key, $column, array $row ): void {
+        $value    = $row[ $key ] ?? '';
+        $class    = is_array( $column ) ? ( $column['class'] ?? '' ) : '';
+        $callback = is_array( $column ) ? ( $column['callback'] ?? null ) : null;
+
+        // A callback returns markup of its own; anything else goes through
+        // the fields package, which decides what "empty" is and escapes what it prints.
+        // Both were wrong here: `empty()` made a count of nought render as a
+        // dash, and esc_attr() on an already-escaped string printed the
+        // placeholder's own markup as visible tags.
+        $value = is_callable( $callback )
+            ? (string) call_user_func( $callback, $value, $row )
+            : Display::text( $value, (string) $this->config['empty_value'] );
+        ?>
+        <td <?php echo $class ? 'class="' . esc_attr( $class ) . '"' : ''; ?>>
+            <?php echo $value; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+        </td>
+        <?php
+    }
+}

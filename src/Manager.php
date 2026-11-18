@@ -32,6 +32,7 @@ use SugarCommerce\Flyouts\Components\Activity;
 use SugarCommerce\Flyouts\Components\FormField;
 use SugarCommerce\Flyouts\Flyout;
 use SugarCommerce\Flyouts\ActionBar;
+use SugarCommerce\Text\Display\Color;
 
 /**
  * Class Manager
@@ -591,8 +592,8 @@ class Manager {
 
 			$tone       = self::text( $tag['tone'] ?? 'neutral' );
 			$tone       = in_array( $tone, Flyout::VALID_TONES, true ) ? $tone : 'neutral';
-			$background = Identity::hex( $tag['background'] ?? '' );
-			$color      = Identity::hex( $tag['color'] ?? '' );
+			$background = Color::hex( $tag['background'] ?? '' );
+			$color      = Color::hex( $tag['color'] ?? '' );
 			$title      = trim( self::text( $tag['title'] ?? '' ) );
 
 			// Both or neither, as an avatar's monogram takes them: a

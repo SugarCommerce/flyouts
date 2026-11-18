@@ -310,6 +310,12 @@ final class ActivityTest extends TestCase {
 		try {
 			$this->assertStringContainsString( '>2 hours ago<', Activity::time_ago( '2026-01-10 10:00:00' ) );
 			$this->assertStringContainsString( '>in 1 day<', Activity::time_ago( '2026-01-11 12:00:00' ) );
+
+			// Counted as WordPress counts: to the nearest unit, seconds
+			// under a minute, and never a date however long ago.
+			$this->assertStringContainsString( '>2 weeks ago<', Activity::time_ago( '2025-12-28 12:00:00' ) );
+			$this->assertStringContainsString( '>12 seconds ago<', Activity::time_ago( '2026-01-10 11:59:48' ) );
+			$this->assertStringContainsString( '>2 years ago<', Activity::time_ago( '2024-01-10 12:00:00' ) );
 		} finally {
 			Clock::reset();
 		}

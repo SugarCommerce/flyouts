@@ -279,23 +279,12 @@ if ( ! function_exists( 'wp_normalize_path' ) ) {
 }
 
 /*
- * What an activity feed says about time. human_time_diff() in WordPress's
- * own words, to the unit -- enough for a test to read "2 hours ago" -- and
- * wp_date() in UTC.
+ * What an activity feed says about time: the site in UTC, and wp_date() in
+ * it. The words are sugarcommerce/dates'.
  */
-if ( ! function_exists( 'human_time_diff' ) ) {
-	function human_time_diff( $from, $to = 0 ) {
-		$diff = abs( (int) $to - (int) $from );
-
-		foreach ( [ 86400 => 'day', 3600 => 'hour', 60 => 'min' ] as $seconds => $unit ) {
-			if ( $diff >= $seconds ) {
-				$count = (int) round( $diff / $seconds );
-
-				return $count . ' ' . $unit . ( 1 === $count ? '' : 's' );
-			}
-		}
-
-		return $diff . ' secs';
+if ( ! function_exists( 'wp_timezone' ) ) {
+	function wp_timezone() {
+		return new DateTimeZone( 'UTC' );
 	}
 }
 

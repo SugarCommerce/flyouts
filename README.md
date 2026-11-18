@@ -138,7 +138,7 @@ there is no image, and an `icon` for when there is neither -- an icon from the f
 "Icons". It
 is drawn at forty pixels with the corner an avatar has in a list table.
 `initials` gives the letters outright, for a panel with its own idea of
-them, and `background` with `color` -- both, as six-digit hex -- draws them
+them, and `background` with `color` -- both, as hex -- draws them
 as a monogram: `[ 'initials' => 'AL', 'background' => '#d7dffb', 'color' =>
 '#2f43a3' ]`. Choose a pair that can be read; the library does not check.
 The `icon` may also be any icon from the fields package's sets
@@ -182,7 +182,7 @@ Flyouts::register( 'shop_customer', [
 ```
 
 Each tag is a label, or a `label` with a `tone` (as the badge takes) or a
-`background` and `color` of its own — both, as six-digit hex — and an
+`background` and `color` of its own — both, as hex — and an
 optional `title` for hover. A plugin with tag chips of its own can return
 their markup as a string instead; it is printed as it is, so it must come
 from the plugin's code, escaped. The tags give way before the title does and
@@ -726,6 +726,8 @@ now `sugarcommerce`.
 | `arraypress/wp-money` (`format_money()`) | `sugarcommerce/money` (`Money::format()`) |
 | `arraypress/wp-composer-assets` | none: `Assets::url( $relative )` finds the library's own files |
 | `time()` behind an activity feed's "2 hours ago" | `SugarCommerce\Dates\Clock::time()`, so a test that freezes the clock freezes the feed |
+| `human_time_diff()` in `Activity::time_ago()` | `SugarCommerce\Dates\Site::relative_with_title( $value, null, Site::LIKE_WORDPRESS )`, the one relative-time renderer: the same words |
+| `Identity::hex( $value )` (six digits with a hash, or '') | removed: `SugarCommerce\Text\Display\Color::hex( $value )` (sugarcommerce/text, the one colour helper), which also reads `#abc`, no hash and upper case, and writes `#rrggbb` |
 | REST `wp-flyout/v1/…` (prefixed builds `{prefix}-wp-flyout/v1`) | `sugarcommerce-flyouts/v1/…` (`{prefix}-sugarcommerce-flyouts/v1`) |
 | script and style handles `wp-flyout`, `wp-flyout-{component}`, `wp-flyout-wp-flyout` | `sugarcommerce-flyouts`, `sugarcommerce-flyouts-{component}`, `sugarcommerce-flyouts-wp-flyout` |
 | `window.ArrayPressFlyouts` (the per-build config registry) | `window.SugarCommerceFlyouts` |
@@ -748,6 +750,7 @@ fields package draws.
 
 * PHP 8.3 or later
 * WordPress 7.1 or later
+* `sugarcommerce/dates`, `fields`, `money` and `text` (colours)
 
 ## License
 

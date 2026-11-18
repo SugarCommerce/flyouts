@@ -151,6 +151,16 @@ final class IdentityTest extends TestCase {
 	}
 
 	/**
+	 * A colour is read the way it is pasted -- three digits, no hash, upper
+	 * case -- and written one way.
+	 */
+	public function test_a_colour_is_read_leniently_and_written_one_way(): void {
+		$html = $this->render( [ 'title' => 'Ada', 'header' => [ 'avatar' => [ 'initials' => 'A', 'background' => '#FDE', 'color' => '2F43A3' ] ] ] );
+
+		$this->assertStringContainsString( 'style="background:#ffddee;color:#2f43a3"', $html );
+	}
+
+	/**
 	 * An icon from the fields package's sets is drawn as its SVG, on the colours
 	 * given -- a collection's icon on the collection's colour -- and one
 	 * that is not an icon draws nothing rather than a broken picture.
@@ -182,7 +192,7 @@ final class IdentityTest extends TestCase {
 	}
 
 	/**
-	 * A colour is six-digit hex or it is nothing, and one without the other is nothing.
+	 * A colour is hex or it is nothing, and one without the other is nothing.
 	 *
 	 * It is written into a style attribute, so nothing that is not a
 	 * colour may reach it; and half a pair would be set against the grey
@@ -197,7 +207,7 @@ final class IdentityTest extends TestCase {
 				[ 'color' => '#2f43a3' ],
 				[ 'background' => 'red;position:fixed', 'color' => '#2f43a3' ],
 				[ 'background' => '#d7dffb', 'color' => 'url(https://example.test/x)' ],
-				[ 'background' => '#fde', 'color' => '#2f43a3' ],
+				[ 'background' => '#ffddeg', 'color' => '#2f43a3' ],
 				[ 'background' => [ '#d7dffb' ], 'color' => '#2f43a3' ],
 			] as $colours
 		) {

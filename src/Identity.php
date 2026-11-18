@@ -13,6 +13,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Flyouts;
 
 use SugarCommerce\Flyouts\Utils\Icon;
+use SugarCommerce\Text\Display\Color;
 
 /**
  * Class Identity
@@ -85,8 +86,10 @@ final class Identity {
 				'name'       => self::text( $avatar['name'] ?? '' ),
 				'icon'       => self::text( $avatar['icon'] ?? '' ),
 				'initials'   => self::text( $avatar['initials'] ?? '' ),
-				'background' => self::hex( $avatar['background'] ?? '' ),
-				'color'      => self::hex( $avatar['color'] ?? '' ),
+				// Into a style attribute, so a colour or nothing: a name, a
+				// `url()` or anything with a semicolon in it is nothing.
+				'background' => Color::hex( $avatar['background'] ?? '' ),
+				'color'      => Color::hex( $avatar['color'] ?? '' ),
 			],
 			'meta'   => $meta,
 			'copy'   => 'subtitle' === ( $header['copy'] ?? '' ) ? 'subtitle' : '',
@@ -265,24 +268,6 @@ final class Identity {
 		$letter = function_exists( 'mb_substr' ) ? mb_substr( $word, 0, 1 ) : substr( $word, 0, 1 );
 
 		return function_exists( 'mb_strtoupper' ) ? mb_strtoupper( $letter ) : strtoupper( $letter );
-	}
-
-	/**
-	 * A colour, as six-digit hex with its hash, or nothing.
-	 *
-	 * It is written into a style attribute, so it is a colour and nothing
-	 * else: `#fde`, a name, a `url()` and anything with a semicolon in it
-	 * are all nothing.
-	 *
-	 * @param mixed $value Anything.
-	 *
-	 * @return string Lower case, or empty.
-	 * @since 1.0.0
-	 */
-	public static function hex( $value ): string {
-		$value = strtolower( self::text( $value ) );
-
-		return 1 === preg_match( '/^#[0-9a-f]{6}$/', $value ) ? $value : '';
 	}
 
 	/**

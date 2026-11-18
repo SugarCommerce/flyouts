@@ -12,7 +12,7 @@ declare( strict_types=1 );
 
 namespace SugarCommerce\Flyouts\Components;
 
-use SugarCommerce\Dates\Clock;
+use SugarCommerce\Dates\Site;
 use SugarCommerce\Flyouts\Utils\Icon;
 use SugarCommerce\Flyouts\Components;
 use SugarCommerce\Flyouts\Manager;
@@ -505,8 +505,10 @@ class Activity implements Renderable {
 	/**
 	 * "2 weeks ago", with the moment itself on hover.
 	 *
-	 * In WordPress's own words, from human_time_diff(), so a feed reads the
-	 * same as the rest of the admin. A moment in the future is "in 3 days".
+	 * Counted and worded as WordPress's human_time_diff() does, so a feed
+	 * reads the same as the rest of the admin, by sugarcommerce/dates'
+	 * Site::relative(), the one relative-time renderer. A moment in the
+	 * future is "in 3 days".
 	 *
 	 * @param mixed $time A UTC datetime as stored, a timestamp, or a date object.
 	 *
@@ -520,24 +522,19 @@ class Activity implements Renderable {
 			return '';
 		}
 
-		// The shared clock rather than time(), so a test that freezes it
-		// freezes the feed with it.
-		$now  = Clock::time();
-		$span = human_time_diff( $timestamp, $now );
+		// On the shared clock (Site::relative reads it), so a test that
+		// freezes it freezes the feed with it.
+		$said = Site::relative_with_title( gmdate( 'Y-m-d H:i:s', $timestamp ), null, Site::LIKE_WORDPRESS );
 
-		$text = $timestamp <= $now
-			/* translators: %s: a length of time, such as "2 weeks". */
-			? sprintf( __( '%s ago', 'sugarcommerce' ), $span )
-			/* translators: %s: a length of time, such as "2 weeks". */
-			: sprintf( __( 'in %s', 'sugarcommerce' ), $span );
-
-		$exact = wp_date( trim( get_option( 'date_format', 'F j, Y' ) . ' ' . get_option( 'time_format', 'g:i a' ) ), $timestamp );
+		if ( '' === $said['text'] ) {
+			return '';
+		}
 
 		return sprintf(
 			'<time datetime="%1$s" title="%2$s">%3$s</time>',
 			esc_attr( gmdate( 'c', $timestamp ) ),
-			esc_attr( (string) $exact ),
-			esc_html( $text )
+			esc_attr( $said['title'] ),
+			esc_html( $said['text'] )
 		);
 	}
 

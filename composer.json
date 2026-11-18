@@ -14,7 +14,8 @@
     "php": ">=8.3",
     "sugarcommerce/dates": "dev-main",
     "sugarcommerce/fields": "dev-main",
-    "sugarcommerce/money": "dev-main"
+    "sugarcommerce/money": "dev-main",
+    "sugarcommerce/text": "dev-main"
   },
   "require-dev": {
     "phpcompatibility/phpcompatibility-wp": "^2.1",
@@ -47,6 +48,13 @@
     {
       "type": "path",
       "url": "../dates",
+      "options": {
+        "symlink": false
+      }
+    },
+    {
+      "type": "path",
+      "url": "../text",
       "options": {
         "symlink": false
       }

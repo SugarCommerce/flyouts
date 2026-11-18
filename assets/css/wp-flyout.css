@@ -4175,10 +4175,11 @@
  */
 .wp-flyout-tags {
     display: flex;
-    /* Shrinking is shared in proportion to each item's shrink factor times
-       its width, so at 1 a row of tags wider than the name took most of the
-       room from the name: "PG..." beside three whole tags on a phone. */
-    flex: 0 1000 auto;
+    /* Only the room the name and badge leave. Shrinking by a factor still
+       took a fraction of a pixel from the name -- enough for its ellipsis,
+       "PG-10..." beside three tags on a phone -- so the tags start from
+       nothing and grow into what is left instead. */
+    flex: 1 1 0;
     flex-wrap: nowrap;
     align-items: center;
     gap: 6px;

@@ -193,17 +193,16 @@ final class StylesheetTest extends TestCase {
 	/**
 	 * In the title row the tags give way before the name does.
 	 *
-	 * Both shrink, and flex shares the shrinking by each item's factor
-	 * times its width: equal factors let a row of tags wider than the name
-	 * take most of the room from it. The tags' factor has to dwarf the
-	 * title's for "they give way before the title does" to hold.
+	 * Sharing the shrinking by a factor, however lopsided, still takes a
+	 * fraction of a pixel from the name, and a name with an ellipsis loses
+	 * whole letters to it. The tags start from nothing and take only the
+	 * room left over, so the name is never what gives.
 	 */
 	public function test_tags_give_way_before_the_title(): void {
 		$css = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/wp-flyout.css' );
 
-		$this->assertSame( 1, preg_match( '/\.wp-flyout-tags\s*\{[^}]*?flex:\s*0\s+(\d+)\s+auto;/s', $css, $tags ) );
-		$this->assertGreaterThanOrEqual( 100, (int) $tags[1], 'The tags shrink no faster than the title.' );
-		$this->assertDoesNotMatchRegularExpression( '/\.wp-flyout-title-row \.wp-flyout-title\s*\{[^}]*flex-shrink/s', $css, 'The title was made to shrink faster.' );
+		$this->assertSame( 1, preg_match( '/\\.wp-flyout-tags\\s*\\{[^}]*?flex:\\s*(\\d+)\\s+1\\s+0;/s', $css ), 'The tags do not start from nothing.' );
+		$this->assertDoesNotMatchRegularExpression( '/\\.wp-flyout-title-row \\.wp-flyout-title\\s*\\{[^}]*flex-shrink/s', $css, 'The title was made to shrink faster.' );
 	}
 
 	/**

@@ -108,7 +108,7 @@
             var flyout = $component.data('flyout');
             var detailsKey = $component.data('details-key');
 
-            fetch(wpFlyout.restUrl + '/action', {
+            window.SugarCommerceFlyouts.request(wpFlyout.restUrl + '/action', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

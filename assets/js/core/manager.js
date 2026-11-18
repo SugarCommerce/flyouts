@@ -196,7 +196,7 @@
                 options.body = JSON.stringify(data);
             }
 
-            return fetch(wpFlyout.restUrl + endpoint, options)
+            return window.SugarCommerceFlyouts.request(wpFlyout.restUrl + endpoint, options)
                 .then(function (response) {
                     return response.json().then(
                         function (json) {

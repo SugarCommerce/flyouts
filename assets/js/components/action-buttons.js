@@ -53,7 +53,7 @@
             // Make REST API request
             var self = this;
 
-            fetch(wpFlyout.restUrl + '/action', {
+            window.SugarCommerceFlyouts.request(wpFlyout.restUrl + '/action', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

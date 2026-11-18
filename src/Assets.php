@@ -137,8 +137,10 @@ class Assets {
 		);
 		self::$last_handles['style'] = Runtime::handle();
 
-		// Register core JavaScript files
-		$js_deps = [ 'jquery' ];
+		// Register core JavaScript files. wp-api-fetch carries the REST
+		// requests, so a nonce that expired while the screen was open is
+		// renewed rather than answered with a 403.
+		$js_deps = [ 'jquery', 'wp-api-fetch' ];
 		foreach ( self::$core_scripts as $js_file ) {
 			$handle = Runtime::handle( basename( $js_file, '.js' ) );
 

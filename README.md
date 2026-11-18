@@ -622,6 +622,10 @@ particular record is your check — in the callbacks, or through the
 the flyout id and the request and can return a different capability for a
 different record.
 
+Every request the panels make goes through `wp.apiFetch` (the core scripts
+depend on `wp-api-fetch`), so a screen left open past its nonce's life
+renews the nonce and tries again instead of answering 403.
+
 ## Money: major or minor units
 
 Any component that shows money — line items, the price summary, the refund

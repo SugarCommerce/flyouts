@@ -41,6 +41,58 @@ window.SugarCommerceFlyouts.resolve = window.SugarCommerceFlyouts.resolve || fun
     return best ? reg[best] : (window.wpFlyout || {});
 };
 
+/*
+ * A REST request, the way fetch() makes one.
+ *
+ * Through wp.apiFetch when the page has it, because the nonce printed with
+ * the page runs out after a day: a screen left open overnight then gets a
+ * 403 from every panel. apiFetch notices the stale nonce, asks for a fresh
+ * one and sends the request again. Its answer comes back shaped like a fetch
+ * Response (ok, status, json()), so the callers read it the same either way;
+ * a body that was not JSON makes json() reject, as it would have.
+ *
+ * Defined idempotently, like resolve(): two builds load two copies.
+ *
+ * @param {string} url  The route's full URL.
+ * @param {Object} init As fetch's: method, headers, body.
+ * @return {Promise<Object>} A Response, or something shaped like one.
+ */
+window.SugarCommerceFlyouts.request = window.SugarCommerceFlyouts.request || function (url, init) {
+    var api = window.wp && window.wp.apiFetch;
+
+    init = init || {};
+
+    if (typeof api !== 'function') {
+        return window.fetch(url, init);
+    }
+
+    function answer(ok, status, json, unreadable) {
+        return {
+            ok: ok,
+            status: status,
+            json: function () {
+                return unreadable ? Promise.reject(new SyntaxError(json && json.message || '')) : Promise.resolve(json);
+            }
+        };
+    }
+
+    return api({
+        url: url,
+        method: init.method || 'GET',
+        headers: init.headers || {},
+        body: init.body,
+        parse: true
+    }).then(function (json) {
+        return answer(true, 200, json, false);
+    }, function (error) {
+        if (!error || typeof error !== 'object' || error.name === 'AbortError' || error.code === 'fetch_error' || error.code === 'offline_error') {
+            throw (error instanceof Error ? error : new Error((error && error.message) || ''));
+        }
+
+        return answer(false, (error.data && error.data.status) || 400, error, error.code === 'invalid_json');
+    });
+};
+
 (function ($) {
     'use strict';
 

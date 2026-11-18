@@ -317,4 +317,24 @@ if ( ! function_exists( 'get_bloginfo' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_register_script' ) ) {
+	function wp_register_script( $handle, $src = '', $deps = [], $ver = false, $args = [] ) {
+		$GLOBALS['flyouts_test_scripts'][ $handle ] = $deps;
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_register_style' ) ) {
+	function wp_register_style( $handle, $src = '', $deps = [], $ver = false, $media = 'all' ) {
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_add_inline_script' ) ) {
+	function wp_add_inline_script( $handle, $data, $position = 'after' ) {
+		return true;
+	}
+}
+
 require_once dirname( __DIR__ ) . '/vendor/autoload.php';

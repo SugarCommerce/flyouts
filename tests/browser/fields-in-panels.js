@@ -53,7 +53,7 @@ const SHOWN = 'const shown = ( e ) => !! e && e.getClientRects().length > 0 && "
 // Types that show something and hold nothing to save.
 const DISPLAY = [ 'heading', 'separator', 'message', 'html', 'action_button', 'clipboard', 'tab', 'accordion' ];
 // Types whose parts depend on what they hold.
-const COMPOUND = [ 'repeater', 'group', 'files', 'list', 'key_value', 'tags' ];
+const COMPOUND = [ 'repeater', 'flexible', 'gallery', 'group', 'files', 'list', 'key_value', 'tags' ];
 
 // The layout fields: they draw no wrapper of their own, so each is looked
 // for by what it should draw -- a tab strip or an accordion, with its label.
@@ -353,10 +353,12 @@ async function combobox( page, el, query, nth = 0 ) {
 	}
 	const chosen = await el.evaluate( ( e ) => [ ...e.querySelectorAll( 'select option:checked' ) ].map( ( o ) => o.textContent.trim() ).filter( Boolean ) );
 	const where = await page.evaluate( ( id, n, taken ) => {
-		const all = [ ...document.getElementById( id ).querySelectorAll( '[role="option"]:not([aria-disabled="true"])' ) ];
+		const all = [ ...document.getElementById( id ).querySelectorAll( '[role="option"]:not([aria-disabled="true"])' ) ].filter( ( o ) => ! /^Add “.*” as a new /.test( o.textContent.trim() ) );
 		// What is already chosen is not chosen again, and an offer to
 		// create what was typed is the last resort.
-		const fresh = all.filter( ( o ) => ! taken.includes( o.textContent.trim() ) && 'true' !== o.getAttribute( 'aria-selected' ) );
+		// Never the row that makes a new post, term or user: a run must
+		// not leave things behind in the site.
+		const fresh = all.filter( ( o ) => ! taken.includes( o.textContent.trim() ) && 'true' !== o.getAttribute( 'aria-selected' ) && ! /^Add “.*” as a new /.test( o.textContent.trim() ) );
 		const found = fresh.filter( ( o ) => ! /^Add\s/.test( o.textContent.trim() ) );
 		const options = found.length ? found : fresh;
 		const option = ( options.length ? options : all )[ Math.min( n, ( options.length ? options : all ).length - 1 ) ];
@@ -595,11 +597,30 @@ const FILL = {
 		const row = await lastRow( el );
 		await fillWithin( p, row, r );
 	},
+	// A tile from the library, added to the grid: the first time the first
+	// picture, the second time another beside it.
+	gallery: ( p, el, r ) => media( p, el, '.field-kit__gallery-add', r ? 1 : 0 ),
 	group: ( p, el, r ) => fillWithin( p, el, r ),
 	repeater: async ( p, el, r ) => {
 		await addRow( p, el );
 		const row = await lastRow( el );
 		await fillWithin( p, row, r );
+	},
+	// A row of the last layout offered, filled; the second time that row
+	// is duplicated as well, and the copy must carry what was typed.
+	flexible: async ( p, el, r ) => {
+		await addRow( p, el );
+		const row = await lastRow( el );
+		await fillWithin( p, row, r );
+		if ( r ) {
+			const typed = await row.evaluate( ( e ) => [ ...e.querySelectorAll( '.field-kit__repeater-fields [name]' ) ].map( ( i ) => i.value ) );
+			await ( await row.$( ':scope > .field-kit__repeater-header .field-kit__repeater-duplicate' ) ).click();
+			await wait( 300 );
+			const copy = await lastRow( el );
+			const copied = await copy.evaluate( ( e ) => [ ...e.querySelectorAll( '.field-kit__repeater-fields [name]' ) ].map( ( i ) => i.value ) );
+			if ( JSON.stringify( typed ) !== JSON.stringify( copied ) ) throw new Error( 'duplicate did not copy: ' + JSON.stringify( copied ) );
+			return 'duplicated';
+		}
 	},
 	list: async ( p, el, r ) => {
 		await addRow( p, el );

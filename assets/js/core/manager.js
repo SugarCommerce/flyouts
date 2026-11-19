@@ -493,6 +493,14 @@
             if (typeof settle === 'function') {
                 settle(false);
             }
+
+            // What the fields package started on this markup and keeps
+            // outside it. A visual editor is held by id in TinyMCE's own
+            // registry, so the same panel opened again found the old
+            // editor still there and the new one never started.
+            if (window.SugarCommerceFieldsModules && typeof window.SugarCommerceFieldsModules.destroy === 'function') {
+                window.SugarCommerceFieldsModules.destroy($flyout[0]);
+            }
         },
 
         /**

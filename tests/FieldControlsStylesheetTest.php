@@ -152,13 +152,4 @@ final class FieldControlsStylesheetTest extends TestCase {
 		$this->assertSame( [ 0, 2, 1 ], self::specificity( '.wp-flyout-body input[type="text"]:not(:where(.wp-color-picker))' ) );
 	}
 
-	/**
-	 * A colour field's dependencies are asked per field, so a panel with a
-	 * native colour field loads no Iris and one asking for core's does.
-	 */
-	public function test_dependencies_are_asked_per_field(): void {
-		$source = (string) file_get_contents( dirname( __DIR__ ) . '/src/Manager.php' );
-
-		$this->assertStringContainsString( "method_exists( \$type, 'dependencies_for' ) ? \$type->dependencies_for( (array) \$field )", $source );
-	}
 }

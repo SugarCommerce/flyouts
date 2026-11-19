@@ -24,6 +24,9 @@ use SugarCommerce\Fields\Field;
 use SugarCommerce\Fields\FieldSet;
 use SugarCommerce\Fields\Assets as FieldAssets;
 use SugarCommerce\Fields\Registry as FieldRegistry;
+use SugarCommerce\Fields\Support\Dependencies;
+use SugarCommerce\Fields\Support\Sections;
+use SugarCommerce\Fields\Types\AmountType;
 use SugarCommerce\Flyouts\Utils\Amount;
 use SugarCommerce\Flyouts\Utils\Icon;
 use SugarCommerce\Flyouts\Utils\Runtime;
@@ -119,6 +122,15 @@ class Manager {
 	 * @var bool
 	 */
 	private bool $assets_enqueued = false;
+
+	/**
+	 * How many runs of fields have been divided into tabs or accordions,
+	 * for ids no two of them share.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	private int $divisions = 0;
 
 	// =========================================================================
 	// CONSTRUCTOR & INITIALIZATION
@@ -1024,7 +1036,26 @@ class Manager {
 		// backslash someone typed is eaten by the save that stores it.
 		$set->save( wp_slash( $input ) );
 
-		return $context->values();
+		$values = $context->values();
+
+		// An amount's unit is a second key beside it, which the field set
+		// leaves to whoever stores the record -- and a panel stores what
+		// `save` is handed. Handed nothing, a five pound discount saved as
+		// five percent: the panel reads the unit back from the record, and
+		// the record never got it.
+		foreach ( $set->fields() as $field ) {
+			$type = $field->type();
+
+			if ( $type instanceof AmountType ) {
+				$unit = $type->posted_unit( $field, wp_slash( $input ) );
+
+				if ( '' !== $unit ) {
+					$values[ $type->unit_key( $field ) ] = $unit;
+				}
+			}
+		}
+
+		return $values;
 	}
 
 	/**
@@ -1051,7 +1082,7 @@ class Manager {
 		$configs = [];
 
 		foreach ( $this->normalize_fields( $fields ) as $key => $field ) {
-			if ( Components::is_component( (string) ( $field['type'] ?? 'text' ) ) ) {
+			if ( $this->is_component( $field, (string) $key, $data ) ) {
 				continue;
 			}
 
@@ -1136,6 +1167,11 @@ class Manager {
 		];
 		$column  = 'main';
 
+		// What has been drawn for the card that is open, held until it
+		// closes, so a tab or accordion field among its fields can divide
+		// them. Each is markup, or the marker Field itself.
+		$run = [];
+
 		foreach ( $normalized_fields as $field_key => $field ) {
 			$type = $field['type'] ?? 'text';
 
@@ -1143,6 +1179,8 @@ class Manager {
 				$section = (string) ( $field['section'] ?? '' );
 
 				if ( $section !== $open ) {
+					$columns[ $column ] .= $this->divide( $run, (string) $open );
+					$run                 = [];
 					$columns[ $column ] .= null === $open ? '' : $this->close_section( $open );
 
 					$column              = $this->section_is_aside( $section ) ? 'aside' : 'main';
@@ -1155,7 +1193,7 @@ class Manager {
 			$data_key = $field['name'] ?? $field_key;
 
 			// Render field based on type.
-			if ( Components::is_component( $type ) ) {
+			if ( $this->is_component( $field, (string) $field_key, $data ) ) {
 				$resolved_data = Components::resolve_data( $type, $data_key, $data );
 
 				foreach ( $resolved_data as $key => $value ) {
@@ -1173,13 +1211,23 @@ class Manager {
 				// state and conditional logic already correct.
 				$rendered = $set->field( $data_key );
 
+				// A tab or an accordion is not a control: it divides the
+				// fields after it, and is kept for divide() to draw them by.
+				if ( null !== $rendered && Sections::is_marker( $rendered ) ) {
+					$run[] = $rendered;
+
+					continue;
+				}
+
 				$field_output = null === $rendered
 					? ''
 					: FormField::wrap( $field, $set->render_field( $rendered ) );
 			}
 
-			$columns[ $column ] .= $field_output;
+			$run[] = $field_output;
 		}
+
+		$columns[ $column ] .= $this->divide( $run, (string) $open );
 
 		if ( null !== $open ) {
 			$columns[ $column ] .= $this->close_section( $open );
@@ -1197,6 +1245,70 @@ class Manager {
 			);
 
 		return apply_filters( "wp_flyout_after_render_fields_{$this->prefix}", $output, $fields, $data );
+	}
+
+	/**
+	 * Draw a run of fields, divided into tabs or accordions where a `tab`
+	 * or `accordion` field says so.
+	 *
+	 * The fields package draws a set's markers itself, but a panel asks it
+	 * for one field at a time, so they reached the panel as fields that
+	 * render nothing: a panel declared with two tabs came out as one flat
+	 * list and nothing said why. They divide the fields of the card they
+	 * are in, or of the page when the panel has no cards -- the same rule
+	 * a field set has, drawn by the same code.
+	 *
+	 * @param array<int, string|Field> $run   Markup drawn so far, with the markers in place.
+	 * @param string                   $scope The card, for ids unique to it.
+	 *
+	 * @return string
+	 * @since 1.0.0
+	 */
+	private function divide( array $run, string $scope ): string {
+		$draw   = static fn( array $parts ): string => implode( '', array_filter( $parts, 'is_string' ) );
+		$layout = Sections::split( $run );
+
+		if ( [] === $layout ) {
+			return $draw( $run );
+		}
+
+		// Numbered, because two tabs of one panel each without cards are
+		// both scope '' and would otherwise draw the same ids.
+		return Sections::render( $layout, $draw, $this->prefix . '-' . $scope . '-' . ( ++$this->divisions ) );
+	}
+
+	/**
+	 * Whether a field is one of this library's components rather than a
+	 * field of the fields package.
+	 *
+	 * One name means both. `accordion` is this library's component of
+	 * folding items, and the fields package's marker that folds the fields
+	 * after it. An accordion with items -- its own, or the record's under
+	 * its key -- is the component; one with none would draw nothing as a
+	 * component, and is the marker. Read as the component, every accordion
+	 * marker in a panel vanished, and its fields with it into one list.
+	 *
+	 * @param array<string, mixed> $field The field.
+	 * @param string               $key   Its key.
+	 * @param mixed                $data  The record.
+	 *
+	 * @return bool
+	 * @since 1.0.0
+	 */
+	private function is_component( array $field, string $key, $data ): bool {
+		$type = (string) ( $field['type'] ?? 'text' );
+
+		if ( ! Components::is_component( $type ) ) {
+			return false;
+		}
+
+		if ( 'accordion' === $type && empty( $field['items'] ) ) {
+			$resolved = Components::resolve_data( 'accordion', (string) ( $field['name'] ?? $key ), $data );
+
+			return ! empty( $resolved['items'] );
+		}
+
+		return true;
 	}
 
 	/**
@@ -1489,45 +1601,32 @@ class Manager {
 	/**
 	 * What the field types across every flyout on this screen need.
 	 *
-	 * The media frame, the colour picker, the code editor: each is a
-	 * dependency of a particular type rather than of the fields package, and each has to
-	 * be enqueued before the fields package's own script so it is there when the fields package
-	 * looks for it.
+	 * The media frame, the colour picker, the code editor, the visual
+	 * editor: each is a dependency of a particular type rather than of the
+	 * fields package, and each has to be on the page before a panel opens.
+	 * A panel's fields are rendered over REST, in a request that prints
+	 * nothing, so nothing a type would have enqueued while rendering ever
+	 * reaches the page -- a code field opened as a bare textarea and a
+	 * visual editor as a textarea with an empty toolbar.
 	 *
-	 * Asked of the types rather than of a field set, because a flyout has no
-	 * field set — it renders one FormField at a time.
+	 * Asked of the fields package's own walk, which reads fields nested in
+	 * groups and repeaters as well, after each field is put in the fields
+	 * package's terms.
 	 *
-	 * @return array{scripts: string[], styles: string[], code_editors: string[]}
+	 * @return array{scripts: string[], styles: string[], code_editors: string[], editor: bool}
 	 */
 	private function field_dependencies(): array {
-		$registry = new FieldRegistry();
-		$scripts  = [];
-		$styles   = [];
+		$fields = [];
 
 		foreach ( $this->flyouts as $config ) {
 			foreach ( (array) ( $config['fields'] ?? [] ) as $field ) {
-				$id = (string) ( $field['type'] ?? 'text' );
-
-				if ( ! $registry->has( $id ) ) {
-					continue;
+				if ( is_array( $field ) ) {
+					$fields[] = FormField::to_field( $field );
 				}
-
-				$type = $registry->get( $id );
-
-				// Per field where the type can say: a colour field wants
-				// core's picker only when it asked for it, and the fields package's
-				// FieldSet asks the same way.
-				$needs   = method_exists( $type, 'dependencies_for' ) ? $type->dependencies_for( (array) $field ) : $type->dependencies();
-				$scripts = array_merge( $scripts, $needs['scripts'] ?? [] );
-				$styles  = array_merge( $styles, $needs['styles'] ?? [] );
 			}
 		}
 
-		return [
-			'scripts'      => array_values( array_unique( $scripts ) ),
-			'styles'       => array_values( array_unique( $styles ) ),
-			'code_editors' => [],
-		];
+		return Dependencies::of( $fields, new FieldRegistry() );
 	}
 
 	/**

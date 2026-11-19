@@ -395,6 +395,37 @@ it names rather than opening a second card of the same name at the foot of
 the panel. A field on no card keeps its own place. A collapsed card is a
 `<details>`, which opens itself when a field inside it fails validation.
 
+The fields package's own `tab` and `accordion` fields work here as they do
+in a field set: two or more divide the fields after them, within the card
+they are on, or within the page when the panel has no cards. An
+`accordion` with `items` -- its own, or the record's under its key -- is
+this library's accordion component instead.
+
+```php
+'fields' => [
+	'tab_general'  => [ 'type' => 'tab', 'label' => __( 'General', 'my-plugin' ) ],
+	'name'         => [ 'type' => 'text', 'label' => __( 'Name', 'my-plugin' ) ],
+	'tab_advanced' => [ 'type' => 'tab', 'label' => __( 'Advanced', 'my-plugin' ) ],
+	'debug'        => [ 'type' => 'toggle', 'label' => __( 'Debug', 'my-plugin' ) ],
+],
+```
+
+## Fields that need a script
+
+A panel is drawn over REST after the page has loaded, so whatever a field
+type needs on the page is asked of the fields package for every panel on the
+screen and enqueued up front: the code editor for each code field's
+language, core's visual editor for a `wysiwyg` or an `email_editor`, the
+media frame, core's colour picker -- for fields nested in groups and
+repeaters too. The fields package starts each one on the panel's markup,
+starts it again when the panel opens a second time, and stops it when the
+panel closes. An amount's unit is handed to `save` beside it, under
+`{key}_type` or its `type_meta_key`.
+
+`tests/browser/fields-in-panels.js` opens every field type in a panel, fills
+it through its own control, saves, opens it again, and does the same at a
+phone's width; see the top of the file for how to run it.
+
 ## Two columns
 
 A `large` or `full` panel can keep its settings beside its content, the way

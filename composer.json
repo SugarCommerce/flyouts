@@ -15,6 +15,7 @@
     "sugarcommerce/dates": "dev-main",
     "sugarcommerce/fields": "dev-main",
     "sugarcommerce/money": "dev-main",
+    "sugarcommerce/plugin": "dev-main",
     "sugarcommerce/text": "dev-main"
   },
   "require-dev": {

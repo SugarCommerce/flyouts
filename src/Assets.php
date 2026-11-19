@@ -16,6 +16,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Flyouts;
 
 use SugarCommerce\Flyouts\Utils\Runtime;
+use SugarCommerce\Plugin\Assets as Files;
 
 /**
  * Assets Manager Class
@@ -39,50 +40,52 @@ class Assets {
 	private static string $core_style = 'css/wp-flyout.css';
 
 	/**
-	 * Core JavaScript files
+	 * The core script's other handles.
+	 *
+	 * The panel, the manager, alerts and the prompt were four files and are
+	 * one build now (assets/build/wp-flyout.js, from src/js). Each kept its
+	 * handle, registered with no file of its own and the one before it as
+	 * its dependency, so enqueuing or depending on any of them still brings
+	 * the panels -- and the last, which a component depends on, brings all.
+	 *
+	 * No conditional-fields script: the fields package's Conditions module
+	 * reads the same data-conditions attribute, understands the same
+	 * operators, and runs over a flyout when it opens. Two implementations
+	 * of that would disagree eventually, and the fields package's is the
+	 * one the settings and metabox screens already use.
 	 *
 	 * @var array<string>
 	 * @since 1.0.0
 	 */
-	// No conditional-fields.js: the fields package's Conditions module reads the same
-	// data-conditions attribute, understands the same operators, and now runs
-	// over a flyout when it opens. Two implementations of that would disagree
-	// eventually, and the fields package's is the one the settings and metabox screens
-	// already use.
-	private static array $core_scripts = [
-		'js/wp-flyout.js',
-		'js/core/manager.js',
-		'js/core/alert.js',
-
-		// The form an action can ask for before it runs. Last, because it
-		// leans on the manager for the request and the toast.
-		'js/core/prompt.js',
-	];
+	private static array $core_handles = [ 'manager', 'alert', 'prompt' ];
 
 	/**
 	 * Available components and their assets
+	 *
+	 * `script` is the component's entry in assets/build, `style` a file
+	 * under assets, and `deps` what its script needs that it does not import.
 	 *
 	 * @var array<string, array{script: string, style: string, deps: array}>
 	 * @since 1.0.0
 	 */
 	private static array $components = [
 		'image-picker'   => [
-			'script' => 'js/components/image-picker.js',
+			'script' => 'image-picker',
 			'style'  => '',
 			'deps'   => [ 'wp-mediaelement' ],
 		],
 		'activity'       => [
-			'script' => 'js/components/activity.js',
+			'script' => 'activity',
 			'style'  => 'css/components/activity.css',
 			'deps'   => [],
 		],
 		'line-items'     => [
-			'script' => 'js/components/line-items.js',
+			'script' => 'line-items',
 			'style'  => 'css/components/line-items.css',
 			'deps'   => [],
 		],
 		'accordion'      => [
-			'script' => 'js/components/accordion.js',
+			'script' => 'accordion',
 			'style'  => 'css/components/accordion.css',
 			'deps'   => [],
 		],
@@ -92,7 +95,7 @@ class Assets {
 			'deps'   => [],
 		],
 		'action-buttons' => [
-			'script' => 'js/components/action-buttons.js',
+			'script' => 'action-buttons',
 			'style'  => 'css/components/action-buttons.css',
 			'deps'   => [],
 		],
@@ -102,7 +105,7 @@ class Assets {
 			'deps'   => [],
 		],
 		'refund-form' => [
-			'script' => 'js/components/refund-form.js',
+			'script' => 'refund-form',
 			'style'  => 'css/components/refund-form.css',
 			'deps'   => [],
 		],
@@ -137,32 +140,26 @@ class Assets {
 		);
 		self::$last_handles['style'] = Runtime::handle();
 
-		// Register core JavaScript files. wp-api-fetch carries the REST
-		// requests, so a nonce that expired while the screen was open is
-		// renewed rather than answered with a 403.
-		$js_deps = [ 'jquery', 'wp-api-fetch' ];
-		foreach ( self::$core_scripts as $js_file ) {
-			$handle = Runtime::handle( basename( $js_file, '.js' ) );
+		// The core script, from its build: its manifest names what it
+		// imports -- wp-api-fetch, which carries the REST requests, so a
+		// nonce that expired while the screen was open is renewed rather
+		// than answered with a 403, and wp-dom-ready. In the footer.
+		$handle = Runtime::handle( 'wp-flyout' );
 
-			wp_register_script(
-				$handle,
-				self::url( $js_file ),
-				$js_deps,
-				self::version( $js_file ),
-				true
-			);
+		Files::register_built_script( $handle, __FILE__, 'wp-flyout' );
 
-			// Add global object to first script
-			if ( $js_file === self::$core_scripts[0] ) {
-				wp_add_inline_script(
-					$handle,
-					'window.WPFlyout = window.WPFlyout || {};',
-					'before'
-				);
-			}
+		wp_add_inline_script(
+			$handle,
+			'window.WPFlyout = window.WPFlyout || {};',
+			'before'
+		);
 
-			$js_deps                      = [ $handle ];
-			self::$last_handles['script'] = $handle;
+		self::$last_handles['script'] = $handle;
+
+		foreach ( self::$core_handles as $suffix ) {
+			wp_register_script( Runtime::handle( $suffix ), false, [ self::$last_handles['script'] ], false, true );
+
+			self::$last_handles['script'] = Runtime::handle( $suffix );
 		}
 
 		// Register component assets
@@ -179,18 +176,14 @@ class Assets {
 		foreach ( self::$components as $name => $config ) {
 			$handle = Runtime::handle( $name );
 
-			// Register component script if exists
+			// Register component script if exists: its build, after the
+			// core script, in the footer.
 			if ( ! empty( $config['script'] ) ) {
-				$deps = array_merge(
-					[ 'jquery', self::$last_handles['script'] ],
-					$config['deps'] ?? []
-				);
-				wp_register_script(
+				Files::register_built_script(
 					$handle,
-					self::url( $config['script'] ),
-					$deps,
-					self::version( $config['script'] ),
-					true
+					__FILE__,
+					$config['script'],
+					array_merge( [ self::$last_handles['script'] ], $config['deps'] ?? [] )
 				);
 			}
 

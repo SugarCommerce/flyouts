@@ -308,7 +308,20 @@ if ( ! function_exists( 'get_bloginfo' ) ) {
 
 if ( ! function_exists( 'wp_register_script' ) ) {
 	function wp_register_script( $handle, $src = '', $deps = [], $ver = false, $args = [] ) {
-		$GLOBALS['flyouts_test_scripts'][ $handle ] = $deps;
+		$GLOBALS['flyouts_test_scripts'][ $handle ]           = $deps;
+		$GLOBALS['flyouts_test_script_files'][ $handle ]      = [ $src, $ver, $args ];
+
+		return true;
+	}
+}
+
+/*
+ * A script built with @wordpress/scripts that imports @wordpress/i18n is
+ * registered for translation under the family's text domain.
+ */
+if ( ! function_exists( 'wp_set_script_translations' ) ) {
+	function wp_set_script_translations( $handle, $domain = 'default', $path = '' ) {
+		$GLOBALS['flyouts_test_translations'][ $handle ] = $domain;
 
 		return true;
 	}

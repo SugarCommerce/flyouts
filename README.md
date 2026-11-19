@@ -661,9 +661,9 @@ particular record is your check — in the callbacks, or through the
 the flyout id and the request and can return a different capability for a
 different record.
 
-Every request the panels make goes through `wp.apiFetch` (the core scripts
-depend on `wp-api-fetch`), so a screen left open past its nonce's life
-renews the nonce and tries again instead of answering 403.
+Every request the panels make goes through `wp.apiFetch` (the scripts import
+`@wordpress/api-fetch`), so a screen left open past its nonce's life renews
+the nonce and tries again instead of answering 403.
 
 ## Money: major or minor units
 
@@ -742,6 +742,110 @@ and registers it with `Components::register()` if it wants a field type.
 `Icon::get( 'card' )` (`heroicons-outline:credit-card`) is there for its
 fallback.
 
+## The scripts
+
+Plain JavaScript in ES modules (`src/js`), each with one job, built by
+`@wordpress/scripts` into `assets/build` -- one file per script, with an
+`.asset.php` naming the WordPress scripts it imports (`wp-api-fetch`,
+`wp-dom-ready`, `wp-i18n`) and a version that changes with its contents.
+`SugarCommerce\Plugin\Assets::register_built_script()` registers each from
+that file, in the footer. No jQuery: it is no dependency of any of them.
+
+| Entry | Handle, loaded by | Modules |
+|---|---|---|
+| `wp-flyout` | `{prefix}-wp-flyout`, on every screen with a panel (`Assets::enqueue()`) | `panel/panel` (open, close, overlay, tabs, focus; `window.WPFlyout`), `panel/escape`, `manager/init`, `manager/load` (trigger, placeholder, load, the panel put in the page), `manager/header`, `manager/steps` (previous and next, J and K), `manager/menu`, `manager/actions` (menu, row and prompt actions), `manager/dirty` (unsaved changes), `manager/confirm`, `manager/save` (Save, Delete, the panel's buttons), `manager/errors` (a refused save under its field), `manager/clipboard`, `manager/skeleton`, `prompt/prompt` (the form an action asks for) |
+| `accordion` | `{prefix}-accordion`, when a panel has one | `components/accordion` |
+| `action-buttons` | `{prefix}-action-buttons` | `components/action-buttons`, `components/reload` |
+| `activity` | `{prefix}-activity` | `components/activity` (the note box) |
+| `image-picker` | `{prefix}-image-picker`, with core's media frame | `components/image-picker` |
+| `line-items` | `{prefix}-line-items` | `components/line-items` |
+| `refund-form` | `{prefix}-refund-form` | `components/refund-form`, `components/reload` |
+
+The manager's, the alert's and the prompt's handles (`{prefix}-manager`,
+`-alert`, `-prompt`) are still registered, with no file of their own: each
+brings the one before it, so enqueuing or depending on any of them brings the
+panels, as before. A component's script depends on `{prefix}-prompt`.
+
+Shared by them all, in `lib/`: `config` (the one reader of what PHP
+published: the build's entry in `window.SugarCommerceFlyouts`, found from the
+script's own handle, with the English each string falls back to), `request`
+(apiFetch, read the way a fetch Response was), `events`, `dom`, `form` (what
+a panel's form sends -- jQuery's `serializeArray()` rules, then the object
+the save route has always taken), `alert`, `feedback` (toast, the alert at the
+top of a panel, a busy button), `motion` (the slides and fades jQuery did),
+`money`, `store` and `page`. A component's script carries its own copy of
+these; what they remember about an element is kept on the element, under
+`Symbol.for( 'sugarcommerce-flyouts' )`, so every copy reads the same thing,
+as they all read jQuery's data before.
+
+### Events
+
+Each is a native event that bubbles, its payload in `event.detail` -- and,
+when the page has jQuery, the same event is handed to jQuery listeners with
+the payload as extra arguments, exactly as before, once:
+
+```js
+// As SugarCart and the fields package listen, unchanged:
+jQuery( document ).on( 'wpflyout:row-action', ( event, response, action ) => {} );
+jQuery( document ).on( 'wpflyout:dirty', ( event, dirty ) => {} );
+
+// Natively:
+document.addEventListener( 'wpflyout:row-action', ( event ) => {
+	const { response, action } = event.detail;
+} );
+```
+
+| Event | On | `detail` | jQuery's arguments |
+|---|---|---|---|
+| `wpflyout:opened` | document | `{ id, element }` | `( event, { id, element } )` |
+| `wpflyout:closing` (cancelable) | document | `{ id, element, force }` | `( event, { id, element, force } )` |
+| `wpflyout:closed` | document | `{ id }` | `( event, { id } )` |
+| `wpflyout:tab-changed` | document | `{ flyoutId, tabId }` | `( event, { flyoutId, tabId } )` |
+| `flyout:ready` | the panel | `null` | `( event )` |
+| `wpflyout:dirty` | the panel | `{ dirty }` | `( event, dirty )` |
+| `wpflyout:menu-action`, `wpflyout:row-action`, `wpflyout:prompt-action` | the panel | `{ response, action }` | `( event, response, action )` |
+| `wpflyout:note-added` | the activity feed | `{ response }` | `( event, response )` |
+| `accordion:toggled` | the section | `{ isOpen }` | `( event, { isOpen } )` |
+| `accordion:opened`, `accordion:closed` | the section | `null` | `( event )` |
+| `actionbuttons:success` / `actionbuttons:error` | the button | the answer / the message | `( event, answer )` / `( event, message )` |
+| `alert:shown`, `alert:dismissed`, `alert:beforedismiss` (cancelable) | the alert | `null` | `( event )` |
+| `image-picker:changed` | the picker | `{ attachmentId, url }` | `( event, { attachmentId, url } )` |
+| `image-picker:removed` | the picker | `null` | `( event )` |
+
+`preventDefault()` from either kind of listener keeps a panel open on
+`wpflyout:closing` (unless the close was forced) and an alert on
+`alert:beforedismiss`. `lib/events.js` is the one place that reaches for
+jQuery, and only when the page has it.
+
+### Globals
+
+* `window.WPFlyout` -- `open( id, options )`, `close( id, { force } )`,
+  `closeAll()`, `getLastId()`, `discard( id )`, `active`. Its `describe()`,
+  `focusInside()` and `initTabs()` take the panel's element (a jQuery object
+  still works).
+* `window.SugarCommerceFlyouts` -- the per-build settings, published by
+  `Manager::enqueue_assets()` as before.
+
+`WPFlyoutManager`, `WPFlyoutPrompt`, `WPFlyoutAlert` and the components'
+`WPFlyout*` objects were how the old files reached each other; they are
+modules now and no longer on `window`. Nothing outside this library read
+them.
+
+The image picker opens core's media frame through `wp.media`'s own API. A
+panel's markup is put in the page with its scripts run, as jQuery's
+`append()` did; a template (`type="text/template"`) is left alone.
+
+```bash
+npm ci
+npm run build      # assets/build, committed
+npm run start      # rebuild on change
+npm run test:js    # Vitest, in jsdom (composer test:js runs it too)
+npm run lint:js
+```
+
+The build's files are what ship. CI builds again and fails when the result
+differs from what was committed.
+
 ## Moving from arraypress/wp-*
 
 `arraypress/wp-register-flyouts` is this package. `ArrayPress\RegisterFlyouts\X`
@@ -770,6 +874,8 @@ now `sugarcommerce`.
 | REST `wp-flyout/v1/…` (prefixed builds `{prefix}-wp-flyout/v1`) | `sugarcommerce-flyouts/v1/…` (`{prefix}-sugarcommerce-flyouts/v1`) |
 | script and style handles `wp-flyout`, `wp-flyout-{component}`, `wp-flyout-wp-flyout` | `sugarcommerce-flyouts`, `sugarcommerce-flyouts-{component}`, `sugarcommerce-flyouts-wp-flyout` |
 | `window.ArrayPressFlyouts` (the per-build config registry) | `window.SugarCommerceFlyouts` |
+| `window.WPFlyoutManager`, `WPFlyoutAlert`, `WPFlyoutPrompt`, `WPFlyoutAccordion`, `WPFlyoutActionButtons`, `WPFlyoutActivity`, `WPFlyoutImagePicker`, `WPFlyoutLineItems`, `WPFlyoutRefundForm` | none: ES modules built into `assets/build` (see [The scripts](#the-scripts)); `window.WPFlyout` stays |
+| scripts under `assets/js`, on jQuery | `assets/build/{entry}.js` from `src/js`, no jQuery; the same handles |
 | icon class `arraypress-icon` | `sugarcommerce-icon` (the fields package's `Icons::ICON_CLASS`) |
 | asset versions `time()` under `WP_DEBUG`, otherwise `1.0.0` | each file's modification time |
 | the fields package's REST search URL `field-kit/v1/search` on `line_items` | `sugarcommerce-fields/v1/search` |
@@ -780,10 +886,10 @@ stylesheet that targets them: every `wp_flyout_*` hook
 (`wp_flyout_{prefix}_{panel}_data`, `wp_flyout_{prefix}_{panel}_saved`,
 `wp_flyout_render_field_{prefix}_{field}`, `wp_flyout_before_render_fields_{prefix}`,
 `wp_flyout_build_flyout_{prefix}`, `wp_flyout_rest_capability_{prefix}` and the
-rest), the `wp-flyout-*` CSS classes, the `wpflyout:*` jQuery events
-(`opened`, `closed`, `row-action`, `menu-action`, `note-added` and the rest),
-`window.WPFlyout`, the asset file names and the `field-kit__*` classes the
-fields package draws.
+rest), the `wp-flyout-*` CSS classes, the `wpflyout:*` events (`opened`,
+`closed`, `row-action`, `menu-action`, `note-added` and the rest -- see
+[The scripts](#the-scripts)), `window.WPFlyout`, the stylesheets' file names
+and the `field-kit__*` classes the fields package draws.
 
 ## Requirements
 

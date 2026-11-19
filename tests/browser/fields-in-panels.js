@@ -362,6 +362,9 @@ async function combobox( page, el, query, nth = 0 ) {
 		const found = fresh.filter( ( o ) => ! /^Add\s/.test( o.textContent.trim() ) );
 		const options = found.length ? found : fresh;
 		const option = ( options.length ? options : all )[ Math.min( n, ( options.length ? options : all ).length - 1 ) ];
+		if ( ! option ) {
+			return { none: true };
+		}
 		option.scrollIntoView( { block: 'nearest' } );
 		const r = option.getBoundingClientRect();
 		const x = r.left + Math.min( 20, r.width / 2 );
@@ -369,6 +372,11 @@ async function combobox( page, el, query, nth = 0 ) {
 		const top = document.elementFromPoint( x, y );
 		return { x, y, onTop: !! top && ( top === option || option.contains( top ) ), inView: r.bottom <= window.innerHeight && r.top >= 0, text: option.textContent.trim() };
 	}, listId, nth, chosen );
+	// Only the row that would add what was typed: nothing here to choose.
+	if ( where.none ) {
+		await input.press( 'Escape' );
+		throw new Error( 'nothing to pick for ' + query );
+	}
 	if ( ! where.inView || ! where.onTop ) {
 		throw new Error( 'list option not reachable (inView ' + where.inView + ', onTop ' + where.onTop + ')' );
 	}
@@ -464,9 +472,20 @@ async function editor( page, el, text ) {
 }
 
 async function relational( page, el, round ) {
-	// Search by a letter every sample title has; the second round takes the
-	// second match.
-	return combobox( page, el, round ? 'e' : 'a', round );
+	// Search by a letter most sample titles have; the second round takes the
+	// second match. A source with few items -- a taxonomy of two terms --
+	// may have nothing with that letter but the row that would add it, so
+	// the other letters are tried before giving up.
+	const letters = round ? [ 'e', 'a', 'o', 'i' ] : [ 'a', 'e', 'o', 'i' ];
+	for ( const letter of letters ) {
+		try {
+			return await combobox( page, el, letter, round );
+		} catch ( e ) {
+			if ( ! /^nothing to pick/.test( e.message ) || letter === letters[ letters.length - 1 ] ) {
+				throw e;
+			}
+		}
+	}
 }
 
 const FILL = {

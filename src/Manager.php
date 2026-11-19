@@ -19,6 +19,7 @@ use SugarCommerce\Fields\Context\ObjectContext;
 use SugarCommerce\Fields\Actions\Actions;
 use SugarCommerce\Fields\Actions\CallbackAction;
 use SugarCommerce\Fields\Search\CallbackSource;
+use SugarCommerce\Fields\Support\Lookups;
 use SugarCommerce\Fields\Search\Sources;
 use SugarCommerce\Fields\Field;
 use SugarCommerce\Fields\FieldSet;
@@ -225,6 +226,11 @@ class Manager {
 		$config['fields'] = $this->register_search_sources( $id, (array) $config['fields'], (string) $config['capability'] );
 		$config['fields'] = $this->register_field_actions( $id, (array) $config['fields'] );
 		$config['fields'] = $this->register_component_actions( $id, (array) $config['fields'] );
+
+		// A slug's check and a location's geocoder are asked on a request
+		// that never draws the panel, like a search, so they are registered
+		// here, under names that are this panel's own.
+		$config['fields'] = Lookups::register_configs( $this->prefix . '-' . $id, (array) $config['fields'] );
 
 		// Store flyout configuration.
 		$this->flyouts[ $id ] = $config;

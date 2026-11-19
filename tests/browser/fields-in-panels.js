@@ -646,6 +646,41 @@ const FILL = {
 		await p.waitForFunction( ( e ) => /Ran with/i.test( e.textContent ), { timeout: 15000 }, el );
 		return 'answered';
 	},
+	slug: ( p, el, r ) => typeInto( el, 'input[data-slug]', r ? 'second-slug' : 'panel-slug' ),
+	rating: ( p, el, r ) => clickLabel( el, r ? '2' : '4.5' ),
+	dimension: async ( p, el, r ) => {
+		await typeInto( el, 'input[type="number"]', r ? '7' : '2.5' );
+		const select = await el.$( 'select' );
+		if ( select ) await select.select( r ? 'lb' : 'g' );
+	},
+	embed: async ( p, el, r ) => {
+		await typeInto( el, 'input[type="url"]', r ? 'https://vimeo.com/76979871' : 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' );
+		await p.waitForFunction( ( e ) => !! e.querySelector( '.field-kit__embed-preview iframe' ), { timeout: 10000 }, el );
+		return 'preview';
+	},
+	location: async ( p, el, r ) => {
+		await typeInto( el, '.field-kit__location-address', r ? 'Paris' : 'Leeds' );
+		await ( await el.$( '.field-kit__location-find' ) ).click();
+		await p.waitForFunction( ( e, lat ) => e.querySelector( '.field-kit__location-lat' ).value === lat, { timeout: 10000 }, el, r ? '48.8566' : '53.8008' );
+		return 'found';
+	},
+	address: async ( p, el, r ) => {
+		await el.$eval( 'select.field-kit__address-country', ( s, c ) => {
+			s.value = c;
+			s.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+		}, r ? 'US' : 'GB' );
+		await p.waitForFunction( ( e, word ) => new RegExp( word ).test( e.querySelector( '[data-part="postcode"] label' ).textContent ), { timeout: 10000 }, el, r ? 'ZIP' : 'Postcode' );
+		await typeInto( el, '[data-part="line1"] input', r ? '1 Infinite Loop' : '10 Park Row' );
+		await typeInto( el, '[data-part="city"] input', r ? 'Cupertino' : 'Leeds' );
+		if ( r ) {
+			await el.$eval( '.field-kit__address-state-select', ( s ) => {
+				s.value = 'CA';
+				s.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+			} );
+		}
+		await typeInto( el, '[data-part="postcode"] input', r ? '95014' : 'LS1 5JL' );
+		return r ? 'US' : 'GB';
+	},
 	heading: async () => 'display',
 	tab: async () => 'display',
 	accordion: async () => 'display',

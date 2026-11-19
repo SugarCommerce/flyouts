@@ -422,6 +422,14 @@ starts it again when the panel opens a second time, and stops it when the
 panel closes. An amount's unit is handed to `save` beside it, under
 `{key}_type` or its `type_meta_key`.
 
+A field that asks the server as it is used -- a `slug` checking it is free, a
+`location` asking its geocoder -- has its handler registered with the panel,
+as a search is, under `{prefix}-{flyout}_{key}`, so the request that asks
+finds it without the panel being drawn. Closing a panel with changes already
+asks first; the fields package's unsaved-changes guard
+(`Guard::enable( '.wp-flyout form' )`) adds a mark on each changed field and a
+warning before leaving the page.
+
 `tests/browser/fields-in-panels.js` opens every field type in a panel, fills
 it through its own control, saves, opens it again, and does the same at a
 phone's width; see the top of the file for how to run it.

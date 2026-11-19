@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Flyouts\Tests;
 
 use SugarCommerce\Fields\Search\Sources;
+use SugarCommerce\Fields\Support\Lookups;
 use SugarCommerce\Flyouts\Components\LineItems;
 use SugarCommerce\Flyouts\Manager;
 use PHPUnit\Framework\TestCase;
@@ -341,5 +342,31 @@ final class ComponentSearchTest extends TestCase {
 		// CSS and JS: block comments, and line comments in JS. Neither
 		// language allows either inside a string that matters here.
 		return (string) preg_replace( [ '{/\*.*?\*/}s', '{^\s*//.*$}m' ], '', $source );
+	}
+
+	/**
+	 * A slug's check is asked on a request that never draws the panel, so
+	 * it is registered with the panel, as a search is, and the field keeps
+	 * the name.
+	 */
+	public function test_a_fields_lookup_is_registered_with_the_panel(): void {
+		$manager = new Manager( 'shop_lookups' );
+
+		$manager->register_flyout(
+			'product',
+			[
+				'title'  => 'Product',
+				'fields' => [
+					'handle' => [
+						'type'            => 'slug',
+						'label'           => 'Handle',
+						'unique_callback' => static fn( string $slug ): bool => 'taken' !== $slug,
+					],
+				],
+			]
+		);
+
+		$this->assertTrue( Lookups::shared()->has( 'shop_lookups-product_handle' ) );
+		$this->assertFalse( ( Lookups::shared()->handler( 'shop_lookups-product_handle' ) )( 'taken' )['available'] );
 	}
 }

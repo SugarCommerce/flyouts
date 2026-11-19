@@ -205,6 +205,19 @@
     transition: border-color 0.15s;
 }
 
+/* A count, typed: no spinner arrows, which on a 56px box covered half the
+   number and were the only browser-drawn control in the panel. */
+.quantity-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 .quantity-input:hover {
     border-color: #8c8f94;
 }
@@ -331,22 +344,21 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 12px;
-    border-top: 2px solid #1e1e1e;
+    padding: 12px 16px;
+    border-top: 1px solid #dcdcde;
     margin-top: 0;
 }
 
+/* "Subtotal", in the panel's words: not shouted, no colon. */
 .total-label {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    color: #50575e;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
+    color: #1e1e1e;
 }
 
 .total-amount {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 650;
     color: #1e1e1e;
     font-variant-numeric: tabular-nums;
 }
@@ -427,14 +439,82 @@
         height: 32px;
     }
 
-    .line-items-total {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-        padding: 12px;
-    }
-
     .total-amount {
         font-size: 16px;
+    }
+}
+
+/*
+ * A phone: each item is two lines -- what it is, then how many at what and
+ * what that comes to -- instead of a four-column table scrolled sideways,
+ * which cut the price in half and left the total off the screen.
+ */
+@media screen and (max-width: 600px) {
+    .line-items-table {
+        overflow: visible;
+    }
+
+    .line-items-table table {
+        min-width: 0;
+    }
+
+    .line-items-table table,
+    .line-items-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .line-items-table thead {
+        display: none;
+    }
+
+    .line-items-table tr.line-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas:
+            "item item actions"
+            "quantity price total";
+        align-items: center;
+        gap: 8px 10px;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f1;
+    }
+
+    .line-items-table tr.line-item > td {
+        display: block;
+        width: auto;
+        padding: 0;
+        border: 0;
+    }
+
+    .line-items-table tr.line-item > .column-item {
+        grid-area: item;
+        min-width: 0;
+    }
+
+    .line-items-table tr.line-item > .column-quantity {
+        grid-area: quantity;
+        text-align: start;
+    }
+
+    .line-items-table tr.line-item > .column-price {
+        grid-area: price;
+        text-align: start;
+    }
+
+    .line-items-table tr.line-item > .column-price::before {
+        content: "\00D7\00A0";
+        content: "\00D7\00A0" / "";
+        color: #8c8f94;
+    }
+
+    .line-items-table tr.line-item > .column-total {
+        grid-area: total;
+    }
+
+    .line-items-table tr.line-item > .column-actions {
+        grid-area: actions;
+        height: auto;
+        margin: 0;
     }
 }

@@ -87,28 +87,28 @@
     color: #059669;
 }
 
-/* Total footer */
+/* Total footer: the bold row under a rule, in the card's own colours. A
+   dark bar here was the one block of navy in any panel. */
 .price-summary-footer {
-    background: #1f2937;
-    color: #fff;
+    background: #fff;
+    color: #1e1e1e;
 }
 
 .price-summary-total td {
-    padding: 18px 16px;
+    padding: 14px 16px;
+    border-top: 1px solid #e5e7eb;
 }
 
 .price-summary-total .label {
     width: 70%;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
 }
 
 .price-summary-total .amount {
     width: 30%;
     text-align: right;
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 650;
     font-variant-numeric: tabular-nums;
 }

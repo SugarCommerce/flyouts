@@ -264,10 +264,13 @@ window.SugarCommerceFlyouts.request = window.SugarCommerceFlyouts.request || fun
             // keyboard over the record somebody came to look at. Nor does
             // one whose list is stepped through with J and K, where a
             // caret in a box would make the next J a letter.
+            // And one with nothing to save is only read: a receipt opened
+            // with the caret in its quantity box, spinner and all.
             if (!$target.length && (
                 selector === ':panel' ||
                 $flyout.hasClass('wp-flyout-footer-when-editing') ||
-                $flyout.hasClass('wp-flyout-step-keys')
+                $flyout.hasClass('wp-flyout-step-keys') ||
+                !$flyout.find('.wp-flyout-save').length
             )) {
                 $target = $flyout;
             }

@@ -935,15 +935,17 @@
 }
 
 /* Badges */
+/* The same pill as the state beside a panel's title: in a word's own case,
+   a tint and an edge of its colour. Shouted in capitals it was a second
+   kind of badge on the same panel. */
 .entity-header-title .badge {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    padding: 2px 9px;
+    border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
     line-height: 1.5;
     white-space: nowrap;
 }
@@ -3624,10 +3626,12 @@
     font-size: 20px;
 }
 
-/* One line: the name gives way, and the badge is never pushed under it. */
+/* The name gives way first; a badge or tag that does not fit beside it
+   goes under it whole. Kept on one line they were cut mid-word -- "Featu"
+   -- by the buttons at the end of the header. */
 .wp-flyout-header--identity .wp-flyout-title-row {
-    flex-wrap: nowrap;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 4px 8px;
 }
 
 .wp-flyout-header--identity .wp-flyout-title {
@@ -3686,12 +3690,16 @@
  * facts read as one long phrase. Drawn by CSS so the markup stays the
  * facts themselves, and given empty alternative text so a screen reader
  * does not read "dot" between them.
+ *
+ * At the end of the fact before it, not the start of the one after: a line
+ * that wraps then ends on a dot, and never starts with one -- on a phone
+ * every second line began "· Sweden".
  */
-.wp-flyout-subtitle-line + .wp-flyout-meta > .wp-flyout-meta-item:first-child::before,
-.wp-flyout-meta-item + .wp-flyout-meta-item::before {
+.wp-flyout-subtitle-line:has(+ .wp-flyout-meta)::after,
+.wp-flyout-meta-item:not(:last-child)::after {
     content: "\00B7";
     content: "\00B7" / "";
-    margin-inline-start: 6px;
+    margin-inline: 6px 0;
     color: #a0a3a8;
     font-weight: 700;
 }
@@ -4169,22 +4177,18 @@
 /* Tags beside the badge ---------------------------------------------------- */
 
 /*
- * A record's own labels, in the title row after its state. They give way
- * before the name does, and never wrap the row: a panel with a dozen tags
- * shows what fits.
+ * A record's own labels, in the title row after its state, wrapping under
+ * the name whole when the row is full.
  */
 .wp-flyout-tags {
     display: flex;
-    /* Only the room the name and badge leave. Shrinking by a factor still
-       took a fraction of a pixel from the name -- enough for its ellipsis,
-       "PG-10..." beside three tags on a phone -- so the tags start from
-       nothing and grow into what is left instead. */
-    flex: 1 1 0;
-    flex-wrap: nowrap;
+    /* As wide as they are, and onto the next line whole when they do not
+       fit: a tag cut at the edge of the header said half a word. */
+    flex: 0 1 auto;
+    flex-wrap: wrap;
     align-items: center;
     gap: 6px;
     min-width: 0;
-    overflow: hidden;
 }
 
 .wp-flyout-tags > * {

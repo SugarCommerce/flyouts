@@ -394,7 +394,7 @@ class Manager {
 
 		$actions = ! empty( $config['actions'] )
 			? $config['actions']
-			: $this->get_default_actions( $config );
+			: $this->get_default_actions( $config, $id );
 
 		if ( ! empty( $actions ) ) {
 			$flyout->set_footer( $this->render_actions( $actions ) );
@@ -747,14 +747,27 @@ class Manager {
 	}
 
 	/**
+	 * Whether a panel is for a record that does not exist yet.
+	 *
+	 * @param mixed $id The record's id, as the panel was opened with it.
+	 *
+	 * @return bool
+	 * @since 1.0.0
+	 */
+	private static function is_new( $id ): bool {
+		return null === $id || '' === $id || 0 === $id || '0' === $id;
+	}
+
+	/**
 	 * Get default action buttons based on configuration.
 	 *
 	 * @param array $config Flyout configuration.
+	 * @param mixed $id     The record, or nothing for a new one.
 	 *
 	 * @return array Default action buttons.
 	 * @since 1.0.0
 	 */
-	private function get_default_actions( array $config ): array {
+	private function get_default_actions( array $config, $id = null ): array {
 		$actions = [];
 
 		/*
@@ -763,7 +776,9 @@ class Manager {
 		 * nearest the corner -- where the button that finishes a dialog is
 		 * on every screen WordPress has.
 		 */
-		if ( ! empty( $config['delete'] ) ) {
+		// A record that does not exist yet has nothing to delete: "New
+		// order" opened with a red Delete beside Save.
+		if ( ! empty( $config['delete'] ) && ! self::is_new( $id ) ) {
 			$actions[] = [
 				'text'  => __( 'Delete', 'sugarcommerce' ),
 				'style' => 'link-delete',

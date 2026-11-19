@@ -349,7 +349,8 @@ class LineItems implements Renderable {
         $total = $this->calculate_total();
         ?>
         <div class="line-items-total">
-            <span class="total-label"><?php esc_html_e( 'Total:', 'sugarcommerce' ); ?></span>
+            <?php // What the items come to, before whatever a summary adds: a panel with a price summary under its items showed two different totals. ?>
+            <span class="total-label"><?php esc_html_e( 'Subtotal', 'sugarcommerce' ); ?></span>
             <span class="total-amount" data-value="<?php echo esc_attr( Amount::decimal( $total, (string) $this->config['currency'] ) ); ?>">
                 <?php echo esc_html( $this->money( $total ) ); ?>
             </span>

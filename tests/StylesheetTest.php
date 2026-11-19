@@ -191,18 +191,49 @@ final class StylesheetTest extends TestCase {
 	}
 
 	/**
-	 * In the title row the tags give way before the name does.
+	 * In the title row, what does not fit beside the name goes under it
+	 * whole, and the name is never what gives.
 	 *
-	 * Sharing the shrinking by a factor, however lopsided, still takes a
-	 * fraction of a pixel from the name, and a name with an ellipsis loses
-	 * whole letters to it. The tags start from nothing and take only the
-	 * room left over, so the name is never what gives.
+	 * Kept on one line, the tags were clipped by the buttons at the end of
+	 * the header: "Featu" on a phone. Shrinking the tags by a factor instead
+	 * had taken letters from the name.
 	 */
-	public function test_tags_give_way_before_the_title(): void {
+	public function test_tags_wrap_whole_and_the_title_never_gives(): void {
 		$css = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/wp-flyout.css' );
 
-		$this->assertSame( 1, preg_match( '/\\.wp-flyout-tags\\s*\\{[^}]*?flex:\\s*(\\d+)\\s+1\\s+0;/s', $css ), 'The tags do not start from nothing.' );
-		$this->assertDoesNotMatchRegularExpression( '/\\.wp-flyout-title-row \\.wp-flyout-title\\s*\\{[^}]*flex-shrink/s', $css, 'The title was made to shrink faster.' );
+		$this->assertMatchesRegularExpression( '/\.wp-flyout-header--identity \.wp-flyout-title-row\s*\{[^}]*flex-wrap:\s*wrap;/', $css );
+		$this->assertMatchesRegularExpression( '/\.wp-flyout-tags\s*\{[^}]*flex-wrap:\s*wrap;/', $css );
+		$this->assertDoesNotMatchRegularExpression( '/\.wp-flyout-tags\s*\{[^}]*overflow:\s*hidden/', $css, 'The tags are clipped again.' );
+		$this->assertDoesNotMatchRegularExpression( '/\.wp-flyout-title-row \.wp-flyout-title\s*\{[^}]*flex-shrink/s', $css, 'The title was made to shrink faster.' );
+	}
+
+	/**
+	 * The dot between the facts under a name ends a line, never starts one.
+	 */
+	public function test_a_separator_never_starts_a_line(): void {
+		$css = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/wp-flyout.css' );
+
+		$this->assertMatchesRegularExpression( '/\.wp-flyout-meta-item:not\(:last-child\)::after\s*\{[^}]*content:\s*"[^"]*00B7"/', $css );
+		$this->assertDoesNotMatchRegularExpression( '/\.wp-flyout-meta-item \+ \.wp-flyout-meta-item::before/', $css );
+	}
+
+	/**
+	 * A receipt's total is the card's bold row, not a dark bar, and the
+	 * header component's badge is the panel's pill, not capitals.
+	 */
+	public function test_receipt_totals_and_badges_speak_the_panels_language(): void {
+		$summary = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/components/price-summary.css' );
+		$items   = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/components/line-items.css' );
+		$css     = (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/wp-flyout.css' );
+
+		$this->assertDoesNotMatchRegularExpression( '/\.price-summary-footer\s*\{[^}]*#1f2937/', $summary );
+		$this->assertDoesNotMatchRegularExpression( '/\.price-summary-total \.label\s*\{[^}]*uppercase/', $summary );
+		$this->assertDoesNotMatchRegularExpression( '/\.total-label\s*\{[^}]*uppercase/', $items );
+		$this->assertDoesNotMatchRegularExpression( '/\.entity-header-title \.badge\s*\{[^}]*uppercase/', $css );
+
+		// No spinner on the quantity, and items stack on a phone.
+		$this->assertMatchesRegularExpression( '/\.quantity-input\s*\{[^}]*appearance:\s*textfield/', $items );
+		$this->assertMatchesRegularExpression( '/@media screen and \(max-width: 600px\)[\s\S]*grid-template-areas/', $items );
 	}
 
 	/**

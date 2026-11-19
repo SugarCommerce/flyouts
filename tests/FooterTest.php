@@ -34,13 +34,35 @@ final class FooterTest extends TestCase {
 	 * Build a panel and render it.
 	 *
 	 * @param array<string, mixed> $config Flyout configuration.
+	 * @param mixed                $id     The record; nothing for a new one.
 	 *
 	 * @return string
 	 */
-	private function render( array $config ): string {
+	private function render( array $config, $id = 7 ): string {
 		$manager = new Manager( 'foot' );
 
-		return $manager->build_flyout( $config + [ 'id' => 'panel', 'fields' => [] ], null, null )->render();
+		return $manager->build_flyout( $config + [ 'id' => 'panel', 'fields' => [] ], null, $id )->render();
+	}
+
+	/**
+	 * A record that does not exist yet has no Delete: it opened "New order"
+	 * with a red Delete beside Save.
+	 */
+	public function test_a_new_record_has_no_delete(): void {
+		$config = [
+			'title'  => 'Order',
+			'save'   => static fn() => true,
+			'delete' => static fn() => true,
+		];
+
+		foreach ( [ null, 0, '0', '' ] as $none ) {
+			$html = $this->render( $config, $none );
+
+			$this->assertStringNotContainsString( 'wp-flyout-delete', $html, var_export( $none, true ) );
+			$this->assertStringContainsString( 'wp-flyout-save', $html );
+		}
+
+		$this->assertStringContainsString( 'wp-flyout-delete', $this->render( $config, 'ord_12' ) );
 	}
 
 	/**

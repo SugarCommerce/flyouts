@@ -10,6 +10,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Flyouts\Tests;
 
 use ReflectionMethod;
+use SugarCommerce\Flyouts\Components;
 use SugarCommerce\Flyouts\Manager;
 use PHPUnit\Framework\TestCase;
 
@@ -323,5 +324,29 @@ final class FieldsInPanelsTest extends TestCase {
 
 		$this->assertStringContainsString( 'wp-flyout-accordion', $html );
 		$this->assertStringContainsString( 'Shipping', $html );
+	}
+
+	/**
+	 * Line items say what they come to as a subtotal: under them a price
+	 * summary says the total, and two rows both called Total disagreed.
+	 */
+	public function test_line_items_come_to_a_subtotal(): void {
+		$html = Components::create(
+			'line_items',
+			[
+				'name'  => 'items',
+				'items' => [
+					[
+						'id'       => 1,
+						'name'     => 'Loops',
+						'price'    => 10,
+						'quantity' => 2,
+					],
+				],
+			]
+		)->render();
+
+		$this->assertStringContainsString( '>Subtotal<', $html );
+		$this->assertStringNotContainsString( 'Total:', $html );
 	}
 }

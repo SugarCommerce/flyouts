@@ -14,7 +14,7 @@ declare( strict_types=1 );
 namespace SugarCommerce\Flyouts\Components;
 
 use SugarCommerce\Flyouts\Renderable;
-use SugarCommerce\Flyouts\Utils\Amount;
+use SugarCommerce\Money\Models\Unit;
 use SugarCommerce\Money\Money;
 
 class PriceSummary implements Renderable {
@@ -57,8 +57,8 @@ class PriceSummary implements Renderable {
 			'class'    => '',
 
 			// The unit every amount is in: `major` (148.00) or `minor`
-			// (14800). See Utils\Amount.
-			'money'    => Amount::MAJOR,
+			// (14800). See sugarcommerce/money's Models\Unit.
+			'money'    => Unit::Major->value,
         ];
     }
 
@@ -214,7 +214,7 @@ class PriceSummary implements Renderable {
      * Format an amount for display.
      *
      * Amounts arrive in the unit `money` names, major by default -- see
-     * Utils\Amount for why that is a stated contract rather than something
+     * money's Models\Unit for why that is a stated contract rather than something
      * inferred per value.
      *
      * @param mixed $amount Amount in the component's unit.
@@ -223,7 +223,7 @@ class PriceSummary implements Renderable {
      */
     private function money( $amount ): string {
         return Money::format(
-            Amount::minor( $amount, $this->config['currency'], Amount::unit( $this->config['money'] ) ),
+            Money::minor( $amount, (string) $this->config['currency'], Unit::of( $this->config['money'] ) ),
             [ 'currency' => $this->config['currency'] ]
         );
     }

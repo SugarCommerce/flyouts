@@ -12,7 +12,7 @@ namespace SugarCommerce\Flyouts\Tests;
 use SugarCommerce\Flyouts\Components\LineItems;
 use SugarCommerce\Flyouts\Components\PriceSummary;
 use SugarCommerce\Flyouts\Components\RefundForm;
-use SugarCommerce\Flyouts\Utils\Amount;
+use SugarCommerce\Money\Money;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -72,7 +72,7 @@ final class MoneyContractTest extends TestCase {
 	 */
 	#[DataProvider( 'amounts' )]
 	public function test_major_units_convert( $amount, string $currency, int $expected ): void {
-		$this->assertSame( $expected, Amount::minor( $amount, $currency ) );
+		$this->assertSame( $expected, Money::minor( $amount, $currency ) );
 	}
 
 	/**

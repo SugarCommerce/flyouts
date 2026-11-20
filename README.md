@@ -685,7 +685,8 @@ Flyouts::register( 'shop_order', [
 ```
 
 `money` on the panel reaches every money component on it; `money` on a field
-is that field's alone and wins over the panel's. `major` is the default.
+is that field's alone and wins over the panel's. `major` is the default
+(sugarcommerce/money's `Models\Unit` and `Money::minor()` read it).
 Minor units are whole numbers in the currency's smallest unit — 5000 is five
 thousand yen, 1500 is one and a half Kuwaiti dinars. Line items post their
 prices back in the unit they were given, and a picked product's price from

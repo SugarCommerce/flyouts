@@ -13,7 +13,6 @@ use SugarCommerce\Flyouts\Components\LineItems;
 use SugarCommerce\Flyouts\Components\PriceSummary;
 use SugarCommerce\Flyouts\Components\RefundForm;
 use SugarCommerce\Flyouts\Manager;
-use SugarCommerce\Flyouts\Utils\Amount;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -33,43 +32,6 @@ final class MoneyUnitsTest extends TestCase {
 	protected function setUp(): void {
 		$GLOBALS['fk_filters'] = [];
 		$GLOBALS['wf_caps']    = null;
-	}
-
-	/**
-	 * In minor units an amount is already what is wanted -- made whole,
-	 * and never scaled by the currency.
-	 */
-	public function test_minor_amounts_are_taken_as_they_are(): void {
-		$this->assertSame( 14800, Amount::minor( 14800, 'USD', Amount::MINOR ) );
-		$this->assertSame( 14800, Amount::minor( '14800', 'USD', Amount::MINOR ) );
-		$this->assertSame( 5000, Amount::minor( 5000, 'JPY', Amount::MINOR ) );
-		$this->assertSame( 1500, Amount::minor( 1500, 'KWD', Amount::MINOR ) );
-		$this->assertSame( 14800, Amount::minor( 14799.6, 'USD', Amount::MINOR ) );
-		$this->assertSame( -1480, Amount::minor( -1480, 'USD', Amount::MINOR ) );
-		$this->assertSame( 0, Amount::minor( 'free', 'USD', Amount::MINOR ) );
-
-		// And the default is still major.
-		$this->assertSame( 14800, Amount::minor( 148, 'USD' ) );
-	}
-
-	/**
-	 * Only `minor` is minor; anything else is the default.
-	 */
-	public function test_the_unit_is_minor_only_when_it_says_so(): void {
-		$this->assertSame( Amount::MINOR, Amount::unit( 'minor' ) );
-		$this->assertSame( Amount::MAJOR, Amount::unit( 'major' ) );
-		$this->assertSame( Amount::MAJOR, Amount::unit( 'MINOR' ) );
-		$this->assertSame( Amount::MAJOR, Amount::unit( null ) );
-		$this->assertSame( Amount::MAJOR, Amount::unit( '' ) );
-	}
-
-	/**
-	 * A minor amount as the decimal an input shows.
-	 */
-	public function test_a_minor_amount_as_a_decimal(): void {
-		$this->assertSame( '148.00', Amount::decimal( 14800, 'USD' ) );
-		$this->assertSame( '5000', Amount::decimal( 5000, 'JPY' ) );
-		$this->assertSame( '1.500', Amount::decimal( 1500, 'KWD' ) );
 	}
 
 	/**

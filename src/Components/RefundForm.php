@@ -18,7 +18,7 @@ namespace SugarCommerce\Flyouts\Components;
 use SugarCommerce\Money\Currencies;
 
 use SugarCommerce\Flyouts\Renderable;
-use SugarCommerce\Flyouts\Utils\Amount;
+use SugarCommerce\Money\Models\Unit;
 use SugarCommerce\Money\Money;
 
 class RefundForm implements Renderable {
@@ -59,8 +59,8 @@ class RefundForm implements Renderable {
 			'class'            => '',
 
 			// The unit amount_paid and amount_refunded are in: `major`
-			// (159.84) or `minor` (15984). See Utils\Amount.
-			'money'            => Amount::MAJOR,
+			// (159.84) or `minor` (15984). See sugarcommerce/money's Models\Unit.
+			'money'            => Unit::Major->value,
 		] );
 
 		if ( empty( $this->config['id'] ) ) {
@@ -95,10 +95,10 @@ class RefundForm implements Renderable {
 	 * @return int
 	 */
 	private function to_minor( $amount ): int {
-		return Amount::minor(
+		return Money::minor(
 			$amount,
 			strtoupper( (string) $this->config['currency'] ),
-			Amount::unit( $this->config['money'] ?? Amount::MAJOR )
+			Unit::of( $this->config['money'] ?? Unit::Major )
 		);
 	}
 
@@ -146,7 +146,7 @@ class RefundForm implements Renderable {
 	 * @return string
 	 */
 	private function format_decimal( int $amount ): string {
-		return Amount::decimal( $amount, strtoupper( (string) $this->config['currency'] ) );
+		return Money::decimal( $amount, strtoupper( (string) $this->config['currency'] ), false );
 	}
 
 	/**

@@ -16,7 +16,7 @@ use SugarCommerce\Fields\Utils\Runtime as FieldRuntime;
 use SugarCommerce\Flyouts\Renderable;
 use SugarCommerce\Flyouts\Utils\Icon;
 use SugarCommerce\Flyouts\RestApi;
-use SugarCommerce\Flyouts\Utils\Amount;
+use SugarCommerce\Money\Models\Unit;
 use SugarCommerce\Money\Money;
 use SugarCommerce\Fields\Attributes;
 
@@ -52,7 +52,7 @@ class LineItems implements Renderable {
      * Complain, under WP_DEBUG, about a row with no name.
      *
      * A row is `name` and `price`, and a price is in the unit `money` names
-     * -- major units unless it says `minor`; see Utils\Amount. Get either
+     * -- major units unless it says `minor`; see money's Models\Unit. Get either
      * wrong and nothing
      * breaks: the wrong key renders a blank label and a total of zero, and
      * the wrong unit renders a hundred times too large. It cost an afternoon
@@ -108,8 +108,8 @@ class LineItems implements Renderable {
 
 			// The unit every price is in -- the rows here, the details
 			// callback's product, and what the form posts back: `major`
-			// (99.00) or `minor` (9900). See Utils\Amount.
-			'money'         => Amount::MAJOR,
+			// (99.00) or `minor` (9900). See sugarcommerce/money's Models\Unit.
+			'money'         => Unit::Major->value,
         ];
     }
 
@@ -140,7 +140,7 @@ class LineItems implements Renderable {
      * @return int
      */
     private function to_minor( $amount ): int {
-        return Amount::minor( $amount, (string) $this->config['currency'], Amount::unit( $this->config['money'] ) );
+        return Money::minor( $amount, (string) $this->config['currency'], Unit::of( $this->config['money'] ) );
     }
 
     /**
@@ -165,7 +165,7 @@ class LineItems implements Renderable {
                 'currency'      => $this->config['currency'],
                 // Which unit data-price and a picked product's price are
                 // in, so the script never has to guess.
-                'money'         => Amount::unit( $this->config['money'] ),
+                'money'         => Unit::of( $this->config['money'] )->value,
                 'show-quantity' => $this->config['show_quantity'] ? '1' : '0',
                 'manager'       => $this->config['manager'],
                 'flyout'        => $this->config['flyout'],
@@ -352,7 +352,7 @@ class LineItems implements Renderable {
         <div class="line-items-total">
             <?php // What the items come to, before whatever a summary adds: a panel with a price summary under its items showed two different totals. ?>
             <span class="total-label"><?php esc_html_e( 'Subtotal', 'sugarcommerce' ); ?></span>
-            <span class="total-amount" data-value="<?php echo esc_attr( Amount::decimal( $total, (string) $this->config['currency'] ) ); ?>">
+            <span class="total-amount" data-value="<?php echo esc_attr( Money::decimal( $total, (string) $this->config['currency'], false ) ); ?>">
                 <?php echo esc_html( $this->money( $total ) ); ?>
             </span>
         </div>

@@ -11,8 +11,8 @@ namespace SugarCommerce\Flyouts\Traits\Manager;
 
 use SugarCommerce\Flyouts\ActionBar;
 use SugarCommerce\Flyouts\Flyout;
-use SugarCommerce\Flyouts\Utils\Amount;
 use SugarCommerce\Flyouts\Utils\Icon;
+use SugarCommerce\Money\Models\Unit;
 
 /**
  * Building a flyout for one record: its tabs, its fields and its footer
@@ -73,7 +73,7 @@ trait Building {
 
 		$this->sections  = (array) ( $config['sections'] ?? [] );
 		$this->layout    = 'split' === ( $config['layout'] ?? '' ) ? 'split' : '';
-		$this->money     = in_array( $config['money'] ?? '', [ Amount::MAJOR, Amount::MINOR ], true ) ? (string) $config['money'] : '';
+		$this->money     = is_string( $config['money'] ?? null ) ? ( Unit::tryFrom( $config['money'] )?->value ?? '' ) : '';
 		$this->record_id = $id;
 
 		if ( 'split' === $this->layout ) {

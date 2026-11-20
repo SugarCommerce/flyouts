@@ -45,7 +45,7 @@ class FormField {
 	 *
 	 * @var array<string, string>
 	 */
-	private const TYPE_ALIASES = [
+	private const array TYPE_ALIASES = [
 		'ajax_select' => 'ajax',
 
 		// A number with a unit, which is what the fields package's amount type is. This

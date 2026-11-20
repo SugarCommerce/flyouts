@@ -30,7 +30,7 @@ class Alert implements Renderable {
      *
      * @var array
      */
-    private const ICONS = [
+    private const array ICONS = [
 		'success' => 'success',
 		'error'   => 'error',
 		'warning' => 'warning',
@@ -71,6 +71,7 @@ class Alert implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         if ( empty( $this->config['message'] ) ) {
             return '';

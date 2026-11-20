@@ -82,6 +82,7 @@ class Accordion implements Renderable {
      * @since 1.0.0
      *
      */
+    #[\Override]
     public function render(): string {
         if ( empty( $this->config['items'] ) ) {
             return '';

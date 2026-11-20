@@ -38,7 +38,7 @@ final class Icon {
 	 *
 	 * @var array<string, string>
 	 */
-	public const DEFAULTS = [
+	public const array DEFAULTS = [
 		'close'    => 'heroicons-outline:x-mark',
 		'menu'     => 'heroicons-outline:ellipsis-horizontal',
 		'previous' => 'heroicons-outline:chevron-left',

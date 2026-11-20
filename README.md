@@ -846,50 +846,38 @@ npm run lint:js
 The build's files are what ship. CI builds again and fails when the result
 differs from what was committed.
 
-## Moving from arraypress/wp-*
+## Security
 
-`arraypress/wp-register-flyouts` is this package. `ArrayPress\RegisterFlyouts\X`
-is now `SugarCommerce\Flyouts\X`, and every class, method, component, panel
-and field configuration key keeps its name and meaning. The global functions
-are gone — a library several plugins bundle must not declare any — and each
-is a static method of `Flyouts`. Text domains `arraypress` and `wp-flyout` are
-now `sugarcommerce`.
+* Opening, saving or deleting what you may not: every route asks the panel's
+  capability (`wp_flyout_rest_capability_{prefix}` to change it), and an
+  action or a header menu item its own on top.
+* Forged requests: the routes are REST, so a signed-in browser's request
+  needs core's `wp_rest` nonce.
+* Running something a panel never offered: an action runs only when a field
+  or the header menu declares it under that key.
+* Values a panel does not declare: what is posted is sanitized by the field
+  set, each value by its own type, and an undeclared key is dropped.
+* Markup slipped into an attribute: a trigger's data keys are reduced to
+  attribute-name characters and their values escaped.
+* Leaking internals: a callback that throws answers "The save callback
+  failed", with its message only under `WP_DEBUG`.
+* Script in a note: a note's text goes through `wp_kses_post()` before the
+  callback sees it.
 
-| Old | New |
-|---|---|
-| `ArrayPress\RegisterFlyouts\*` | `SugarCommerce\Flyouts\*` |
-| `register_flyout( $id, $config )` | `Flyouts::register( $id, $config )` |
-| `get_flyout_button( $id, $args )` | `Flyouts::button( $id, $args )` |
-| `render_flyout_button( $id, $args )` | `Flyouts::render_button( $id, $args )` |
-| `get_flyout_link( $id, $args )` | `Flyouts::link( $id, $args )` |
-| `render_flyout_link( $id, $args )` | `Flyouts::render_link( $id, $args )` |
-| `Registry::instance()->get( $prefix )` | the same, or `Flyouts::manager( $prefix )` |
-| `FormField::to_kit( $config )` | `FormField::to_field( $config )` |
-| `arraypress/wp-field-kit` | `sugarcommerce/fields`: a `custom` field's `render_callback` gets `SugarCommerce\Fields\Field` and `Attributes` |
-| `arraypress/wp-money` (`format_money()`) | `sugarcommerce/money` (`Money::format()`) |
-| `arraypress/wp-composer-assets` | none: `Assets::url( $relative )` finds the library's own files |
-| `time()` behind an activity feed's "2 hours ago" | `SugarCommerce\Dates\Clock::time()`, so a test that freezes the clock freezes the feed |
-| `human_time_diff()` in `Activity::time_ago()` | `SugarCommerce\Dates\Site::relative_with_title( $value, null, Site::LIKE_WORDPRESS )`, the one relative-time renderer: the same words |
-| `Identity::hex( $value )` (six digits with a hash, or '') | removed: `SugarCommerce\Text\Display\Color::hex( $value )` (sugarcommerce/text, the one colour helper), which also reads `#abc`, no hash and upper case, and writes `#rrggbb` |
-| REST `wp-flyout/v1/…` (prefixed builds `{prefix}-wp-flyout/v1`) | `sugarcommerce-flyouts/v1/…` (`{prefix}-sugarcommerce-flyouts/v1`) |
-| script and style handles `wp-flyout`, `wp-flyout-{component}`, `wp-flyout-wp-flyout` | `sugarcommerce-flyouts`, `sugarcommerce-flyouts-{component}`, `sugarcommerce-flyouts-wp-flyout` |
-| `window.ArrayPressFlyouts` (the per-build config registry) | `window.SugarCommerceFlyouts` |
-| `window.WPFlyoutManager`, `WPFlyoutAlert`, `WPFlyoutPrompt`, `WPFlyoutAccordion`, `WPFlyoutActionButtons`, `WPFlyoutActivity`, `WPFlyoutImagePicker`, `WPFlyoutLineItems`, `WPFlyoutRefundForm` | none: ES modules built into `assets/build` (see [The scripts](#the-scripts)); `window.WPFlyout` stays |
-| scripts under `assets/js`, on jQuery | `assets/build/{entry}.js` from `src/js`, no jQuery; the same handles |
-| icon class `arraypress-icon` | `sugarcommerce-icon` (the fields package's `Icons::ICON_CLASS`) |
-| asset versions `time()` under `WP_DEBUG`, otherwise `1.0.0` | each file's modification time |
-| the fields package's REST search URL `field-kit/v1/search` on `line_items` | `sugarcommerce-fields/v1/search` |
+## Layout
 
-Kept as they were, because each is already named from the manager's prefix
-or the panel's id, and renaming them would only churn every plugin and
-stylesheet that targets them: every `wp_flyout_*` hook
-(`wp_flyout_{prefix}_{panel}_data`, `wp_flyout_{prefix}_{panel}_saved`,
-`wp_flyout_render_field_{prefix}_{field}`, `wp_flyout_before_render_fields_{prefix}`,
-`wp_flyout_build_flyout_{prefix}`, `wp_flyout_rest_capability_{prefix}` and the
-rest), the `wp-flyout-*` CSS classes, the `wpflyout:*` events (`opened`,
-`closed`, `row-action`, `menu-action`, `note-added` and the rest -- see
-[The scripts](#the-scripts)), `window.WPFlyout`, the stylesheets' file names
-and the `field-kit__*` classes the fields package draws.
+* `src/Manager.php`: one manager per prefix, holding the panels; its jobs are
+  traits in `src/Traits/Manager/` (registering, building, the header,
+  fields, rendering them, scripts, triggers).
+* `src/Flyout.php`: one panel, with `src/Traits/Flyout/` (what its header
+  says, and drawing it).
+* `src/RestApi.php`: the routes and their permission check, with
+  `src/Traits/RestApi/` (load, save and delete; actions).
+* `src/Components/`: the components a panel can hold; the activity feed's
+  jobs are in `src/Traits/Components/Activity/`.
+* `src/Flyouts.php` (the static entry points), `Registry.php`, `Identity.php`,
+  `Assets.php`, `Components.php`, `ActionBar.php`, and `src/Utils/` (icons,
+  amounts, the runtime's names).
 
 ## Requirements
 

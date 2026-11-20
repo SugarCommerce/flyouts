@@ -121,6 +121,7 @@ class Header implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         if ( empty( $this->config['title'] ) ) {
             return '';

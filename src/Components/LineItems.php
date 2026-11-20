@@ -148,6 +148,7 @@ class LineItems implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         $classes = [ 'wp-flyout-line-items' ];
         if ( ! empty( $this->config['class'] ) ) {

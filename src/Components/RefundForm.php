@@ -35,7 +35,7 @@ class RefundForm implements Renderable {
 	 *
 	 * @var array<string, string>
 	 */
-	private const REASONS = [
+	private const array REASONS = [
 		'requested_by_customer' => 'Requested by customer',
 		'duplicate'             => 'Duplicate',
 		'fraudulent'            => 'Fraudulent',
@@ -154,6 +154,7 @@ class RefundForm implements Renderable {
 	 *
 	 * @return string
 	 */
+	#[\Override]
 	public function render(): string {
 		$refundable = $this->get_refundable();
 

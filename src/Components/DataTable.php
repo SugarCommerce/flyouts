@@ -98,6 +98,7 @@ class DataTable implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         $this->warn_about_the_rows_key();
 

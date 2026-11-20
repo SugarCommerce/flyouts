@@ -56,14 +56,14 @@ final class Amount {
 	 *
 	 * @since 1.0.0
 	 */
-	public const MAJOR = 'major';
+	public const string MAJOR = 'major';
 
 	/**
 	 * Amounts like 14800: what a store keeps.
 	 *
 	 * @since 1.0.0
 	 */
-	public const MINOR = 'minor';
+	public const string MINOR = 'minor';
 
 	/**
 	 * The unit a configuration names, as one of the two.

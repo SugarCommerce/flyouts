@@ -41,7 +41,7 @@ class Components {
 	 *
 	 * @var array<string, array{class: class-string, data: string|string[], asset: string|null}>
 	 */
-	private const COMPONENTS = [
+	private const array COMPONENTS = [
 		// ---- Display ----
 		'header'         => [
 			'class' => Components\Header::class,
@@ -198,7 +198,7 @@ class Components {
 	 * @since 1.0.0
 	 * @var string[]
 	 */
-	public const MONEY = [ 'line_items', 'price_summary', 'refund_form' ];
+	public const array MONEY = [ 'line_items', 'price_summary', 'refund_form' ];
 
 	/**
 	 * Components a consumer registered at runtime.

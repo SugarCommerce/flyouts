@@ -30,7 +30,7 @@ class ActionBar implements Renderable {
      *
      * @var array
      */
-    private const DEFAULTS = [
+    private const array DEFAULTS = [
 		'id'      => '',
 		'actions' => [],
 		'class'   => 'wp-flyout-actions',
@@ -78,6 +78,7 @@ class ActionBar implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         if ( empty( $this->config['actions'] ) ) {
             return '';

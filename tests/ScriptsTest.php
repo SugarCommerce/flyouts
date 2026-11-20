@@ -126,7 +126,7 @@ final class ScriptsTest extends TestCase {
 		$this->assertDirectoryDoesNotExist( dirname( __DIR__ ) . '/assets/js' );
 		$this->assertFileExists( dirname( __DIR__ ) . '/src/js/wp-flyout.js' );
 
-		foreach ( glob( dirname( __DIR__ ) . '/src/{,*/}*.php', GLOB_BRACE ) as $file ) {
+		foreach ( glob( dirname( __DIR__ ) . '/src/{,*/,*/*/}*.php', GLOB_BRACE ) as $file ) {
 			$this->assertStringNotContainsString( "'js/", (string) file_get_contents( $file ), basename( $file ) );
 		}
 	}

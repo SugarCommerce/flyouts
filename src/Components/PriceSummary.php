@@ -67,6 +67,7 @@ class PriceSummary implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         $classes = [ 'wp-flyout-price-summary' ];
         if ( ! empty( $this->config['class'] ) ) {

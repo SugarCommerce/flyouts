@@ -58,6 +58,7 @@ class InfoGrid implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         if ( empty( $this->config['items'] ) ) {
             return '';

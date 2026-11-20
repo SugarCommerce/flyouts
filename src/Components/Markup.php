@@ -59,6 +59,7 @@ class Markup implements Renderable {
 	 * @return string Empty when there is nothing to draw and no class to
 	 *                draw it into later.
 	 */
+	#[\Override]
 	public function render(): string {
 		$html  = is_string( $this->config['html'] ?? null ) ? $this->config['html'] : '';
 		$extra = trim( is_string( $this->config['class'] ?? null ) ? $this->config['class'] : '' );

@@ -59,6 +59,7 @@ class ActionButtons implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         if ( empty( $this->config['buttons'] ) ) {
             return '';

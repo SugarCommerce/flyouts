@@ -65,6 +65,7 @@ class EmptyState implements Renderable {
      *
      * @return string
      */
+    #[\Override]
     public function render(): string {
         $classes = [ 'wp-flyout-empty-state' ];
         if ( $this->config['class'] ) {

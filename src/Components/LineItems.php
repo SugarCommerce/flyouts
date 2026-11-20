@@ -211,7 +211,7 @@ class LineItems implements Renderable {
         $source = (string) ( $this->config['search_source'] ?? '' );
         ?>
         <div class="line-items-selector">
-            <select class="field-kit__select field-kit__select--enhanced product-ajax-select"
+            <select class="field-kit__select field-kit__select--enhanced product-ajax-select"<?php echo FieldRuntime::stamp(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- stamp() escapes; the field kit drives only markup stamped for its build. ?>
                     data-search-endpoint="<?php echo esc_url( rest_url( FieldRuntime::rest_namespace() . '/search' ) ); ?>"
                     data-search-source="<?php echo esc_attr( $source ); ?>"
                     data-search-nonce="<?php echo esc_attr( wp_create_nonce( 'wp_rest' ) ); ?>"

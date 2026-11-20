@@ -83,6 +83,7 @@ final class ComponentSearchTest extends TestCase {
 		$html = $this->render();
 
 		$this->assertStringContainsString( 'field-kit__select--enhanced', $html );
+		$this->assertStringContainsString( 'product-ajax-select" data-field-kit-build="sugarcommerce-fields"', $html );
 		$this->assertStringContainsString( 'data-search-endpoint="https://example.test/wp-json/sugarcommerce-fields/v1/search"', $html );
 		$this->assertStringContainsString( 'data-search-source="demo-order-product"', $html );
 		$this->assertMatchesRegularExpression( '/data-search-nonce="[^"]+"/', $html );

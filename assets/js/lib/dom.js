@@ -5,27 +5,33 @@
  * was written against them: hide() puts `display: none` on the element,
  * show() takes it off again and, if a stylesheet or the inline style PHP
  * printed still hides it, gives it the display its tag has.
- */
-
-/**
- * The first element matching a selector.
  *
- * @param {string}           selector CSS selector.
- * @param {Document|Element} root     Where to look.
- * @return {Element|null} The element.
+ * one(), all() and on() see only this build's markup (config.js, mine()):
+ * a trigger or panel another plugin's copy of the library drew is never
+ * found, opened, cleared or answered here.
  */
-export const one = ( selector, root = document ) =>
-	root.querySelector( selector );
+
+import { mine } from './config';
 
 /**
- * Every element matching a selector, as an array.
+ * Every element matching a selector that is this build's, as an array.
  *
  * @param {string}           selector CSS selector.
  * @param {Document|Element} root     Where to look.
  * @return {Element[]} The elements.
  */
 export const all = ( selector, root = document ) =>
-	Array.from( root.querySelectorAll( selector ) );
+	Array.from( root.querySelectorAll( selector ) ).filter( mine );
+
+/**
+ * The first element matching a selector that is this build's.
+ *
+ * @param {string}           selector CSS selector.
+ * @param {Document|Element} root     Where to look.
+ * @return {Element|null} The element.
+ */
+export const one = ( selector, root = document ) =>
+	all( selector, root )[ 0 ] || null;
 
 /**
  * Listen for an event on whatever matches a selector, now or later.
@@ -46,7 +52,7 @@ export function on( root, type, selector, handler ) {
 				? event.target.closest( selector )
 				: null;
 
-		if ( target && root.contains( target ) ) {
+		if ( target && root.contains( target ) && mine( target ) ) {
 			handler( event, target );
 		}
 	};

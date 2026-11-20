@@ -148,12 +148,6 @@ class Assets {
 
 		Files::register_built_script( $handle, __FILE__, 'wp-flyout' );
 
-		wp_add_inline_script(
-			$handle,
-			'window.WPFlyout = window.WPFlyout || {};',
-			'before'
-		);
-
 		self::$last_handles['script'] = $handle;
 
 		foreach ( self::$core_handles as $suffix ) {

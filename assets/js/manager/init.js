@@ -4,6 +4,7 @@
  * open menu, and a trigger that opens itself.
  */
 
+import { mine } from '../lib/config';
 import { all, on, one } from '../lib/dom';
 import panel from '../panel/panel';
 import { confirmDiscard } from './confirm';
@@ -23,7 +24,8 @@ function guardClosing( event ) {
 	const detail = event.detail || {};
 	const flyout = detail.element;
 
-	if ( ! flyout ) {
+	// Another plugin's copy of the scripts asks its own.
+	if ( ! flyout || ! mine( flyout ) ) {
 		return;
 	}
 

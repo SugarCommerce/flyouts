@@ -10,7 +10,7 @@
 
 import { __ } from '@wordpress/i18n';
 
-import { icon, strings } from '../lib/config';
+import { icon, mine, strings } from '../lib/config';
 import { all, escapeHtml, make, on, parse } from '../lib/dom';
 import { formatter, say, toMinor } from '../lib/money';
 import { fadeOut } from '../lib/motion';
@@ -449,7 +449,11 @@ export function bindLineItems() {
 	);
 
 	document.addEventListener( 'wpflyout:opened', ( event ) => {
-		if ( event.detail && event.detail.element ) {
+		if (
+			event.detail &&
+			event.detail.element &&
+			mine( event.detail.element )
+		) {
 			initComponents( event.detail.element );
 		}
 	} );

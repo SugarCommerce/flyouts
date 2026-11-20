@@ -58,21 +58,30 @@ export function server() {
 }
 
 /**
- * Publish a build's settings the way Manager::enqueue_assets() does.
- *
- * With no <script> to read an id from, the scripts find them under
- * `window.wpFlyout`, the oldest place they were ever published.
+ * The build the suites run as: the key its settings are published under,
+ * which the core script's handle (support/setup.js) starts with.
+ */
+export const BUILD = 'sugarcommerce-flyouts';
+
+/**
+ * Publish a build's settings the way Manager::enqueue_assets() does: into
+ * its own entry of `window.SugarCommerceFlyouts`, beside whatever the core
+ * script already put there (its `panel`).
  *
  * @param {Object} [strings] Translated sentences.
  * @param {Object} [icons]   Icon markup by key.
  */
 export function publish( strings = {}, icons = {} ) {
-	window.wpFlyout = {
+	const registry = ( window.SugarCommerceFlyouts =
+		window.SugarCommerceFlyouts || {} );
+
+	registry[ BUILD ] = Object.assign( registry[ BUILD ] || {}, {
 		restUrl: REST,
 		restNonce: 'nonce',
 		strings,
 		icons,
-	};
+		fields: 'sugarcommerce-fields',
+	} );
 }
 
 /**

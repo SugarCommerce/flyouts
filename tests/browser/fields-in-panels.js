@@ -146,7 +146,7 @@ async function close( page ) {
 		await discard.click();
 	}
 	await page.waitForFunction( () => ! document.querySelector( '.wp-flyout.active' ), { timeout: 10000 } ).catch( async () => {
-		await page.evaluate( () => document.querySelectorAll( '.wp-flyout' ).forEach( ( f ) => window.WPFlyout && window.WPFlyout.close( f.id, { force: true } ) ) );
+		await page.evaluate( () => document.querySelectorAll( '.wp-flyout' ).forEach( ( f ) => Object.values( window.SugarCommerceFlyouts || {} ).forEach( ( entry ) => entry.panel && entry.panel.close( f.id, { force: true } ) ) ) );
 	} );
 	await wait( 600 );
 }

@@ -3,7 +3,7 @@
  * load route, with a placeholder on screen while it comes.
  */
 
-import { strings } from '../lib/config';
+import { fieldsModules, strings } from '../lib/config';
 import { all, insert, make, one } from '../lib/dom';
 import { showAlert, toastRegion } from '../lib/feedback';
 import { api } from '../lib/request';
@@ -284,7 +284,7 @@ export function teardown( flyout ) {
 	// A visual editor is held by id in TinyMCE's own registry, so the same
 	// panel opened again found the old editor still there and the new one
 	// never started.
-	const fields = window.SugarCommerceFieldsModules;
+	const fields = fieldsModules();
 
 	if ( fields && 'function' === typeof fields.destroy ) {
 		fields.destroy( flyout );
@@ -367,7 +367,7 @@ export function displayFlyout( html, config, options = {} ) {
 	// on DOMContentLoaded -- long past by the time this markup arrives. Its
 	// init() is safe to call again for exactly this, and each module marks
 	// what it has bound.
-	const fields = window.SugarCommerceFieldsModules;
+	const fields = fieldsModules();
 
 	if ( fields && 'function' === typeof fields.init ) {
 		fields.init( flyout );

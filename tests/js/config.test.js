@@ -4,12 +4,33 @@
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { icon, resolve, settings, strings } from '../../assets/js/lib/config';
+import {
+	build,
+	fieldsModules,
+	icon,
+	mine,
+	own,
+	resolve,
+	settings,
+	strings,
+} from '../../assets/js/lib/config';
 
 afterEach( () => {
 	delete window.wpFlyout;
+	delete window.WPFlyout;
 	delete window.SugarCommerceFlyouts;
+	delete window.SugarCommerceFields;
+	document.body.innerHTML = '';
 } );
+
+/**
+ * Publish settings under the build the suites run as.
+ *
+ * @param {Object} entry The settings.
+ */
+const published = ( entry ) => {
+	window.SugarCommerceFlyouts = { 'sugarcommerce-flyouts': entry };
+};
 
 const script = ( id ) => ( { id } );
 
@@ -78,14 +99,58 @@ describe( 'resolve()', () => {
 	} );
 } );
 
-test( 'with no script of its own, a page’s bare wpFlyout is read', () => {
+test( 'a bare page global is never read: only the build’s own entry', () => {
 	window.wpFlyout = { restUrl: 'old' };
+	window.WPFlyout = { open() {} };
 
-	expect( settings().restUrl ).toBe( 'old' );
+	expect( settings() ).toEqual( {} );
+	expect( settings().panel ).toBeUndefined();
+
+	published( { restUrl: 'mine' } );
+
+	expect( settings().restUrl ).toBe( 'mine' );
+} );
+
+test( 'the core script’s entry is made when the page published none', () => {
+	const entry = own();
+
+	expect( window.SugarCommerceFlyouts[ 'sugarcommerce-flyouts' ] ).toBe(
+		entry
+	);
+	expect( build() ).toBe( 'sugarcommerce-flyouts' );
+} );
+
+test( 'the fields modules are those of the fields script the entry names', () => {
+	const plain = { init() {} };
+	const other = { init() {} };
+
+	window.SugarCommerceFields = {
+		'sugarcommerce-fields': { modules: other },
+		'shop-sugarcommerce-fields': { modules: plain },
+	};
+
+	expect( fieldsModules() ).toBeNull();
+
+	published( { fields: 'shop-sugarcommerce-fields' } );
+
+	expect( fieldsModules() ).toBe( plain );
+} );
+
+test( 'markup is this build’s when nothing, or this build, stamped it', () => {
+	published( {} );
+	document.body.innerHTML =
+		'<p id="none"><b></b></p>' +
+		'<div data-flyout-build="sugarcommerce-flyouts"><b id="ours"></b></div>' +
+		'<div data-flyout-build="shop-sugarcommerce-flyouts"><b id="theirs"></b></div>';
+
+	expect( mine( document.querySelector( '#none b' ) ) ).toBe( true );
+	expect( mine( document.getElementById( 'ours' ) ) ).toBe( true );
+	expect( mine( document.getElementById( 'theirs' ) ) ).toBe( false );
+	expect( mine( null ) ).toBe( true );
 } );
 
 test( 'the page’s translations replace the English, key by key', () => {
-	window.wpFlyout = { strings: { saved: 'Gespeichert' } };
+	published( { strings: { saved: 'Gespeichert' } } );
 
 	expect( strings().saved ).toBe( 'Gespeichert' );
 	expect( strings().deleted ).toBe( 'Deleted' );
@@ -93,7 +158,7 @@ test( 'the page’s translations replace the English, key by key', () => {
 } );
 
 test( 'an icon is the server’s markup, or the Dashicon it used to be', () => {
-	window.wpFlyout = { icons: { close: '<svg class="x"></svg>' } };
+	published( { icons: { close: '<svg class="x"></svg>' } } );
 
 	expect( icon( 'close', 'no-alt' ) ).toBe( '<svg class="x"></svg>' );
 	expect( icon( 'copy', 'admin-page' ) ).toBe(

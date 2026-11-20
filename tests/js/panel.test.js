@@ -1,5 +1,5 @@
 /**
- * A panel on screen: window.WPFlyout's open, close, overlay, tabs, focus.
+ * A panel on screen: the panel API's open, close, overlay, tabs, focus.
  */
 
 import jQuery from 'jquery';

@@ -238,13 +238,15 @@ describe( 'opening', () => {
 	test( 'the fields package starts on the markup, and stops when it closes', async () => {
 		const fields = { init: vi.fn(), destroy: vi.fn() };
 
-		window.SugarCommerceFieldsModules = fields;
+		window.SugarCommerceFields = {
+			'sugarcommerce-fields': { modules: fields },
+		};
 		const flyout = await open();
 
 		expect( fields.init ).toHaveBeenCalledWith( flyout );
 		panel.close( flyout.id );
 		expect( fields.destroy ).toHaveBeenCalledWith( flyout );
-		delete window.SugarCommerceFieldsModules;
+		delete window.SugarCommerceFields;
 	} );
 } );
 
@@ -352,7 +354,9 @@ describe( 'unsaved changes', () => {
 	test( 'a forced close does not ask, and lets go of the panel', async () => {
 		const fields = { init: vi.fn(), destroy: vi.fn() };
 
-		window.SugarCommerceFieldsModules = fields;
+		window.SugarCommerceFields = {
+			'sugarcommerce-fields': { modules: fields },
+		};
 		const flyout = await open();
 
 		type( flyout.querySelector( '[name="name"]' ), 'Grace' );
@@ -361,7 +365,7 @@ describe( 'unsaved changes', () => {
 
 		expect( flyout.querySelector( '.wp-flyout-confirm' ) ).toBeNull();
 		expect( fields.destroy ).toHaveBeenCalledWith( flyout );
-		delete window.SugarCommerceFieldsModules;
+		delete window.SugarCommerceFields;
 	} );
 
 	test( 'an action that asks for the panel again asks first, when there is a change', async () => {

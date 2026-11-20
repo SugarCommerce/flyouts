@@ -12,6 +12,7 @@ namespace SugarCommerce\Flyouts\Traits\Manager;
 use SugarCommerce\Fields\Assets as FieldAssets;
 use SugarCommerce\Fields\Registry as FieldRegistry;
 use SugarCommerce\Fields\Support\Dependencies;
+use SugarCommerce\Fields\Utils\Runtime as FieldsRuntime;
 use SugarCommerce\Flyouts\Assets;
 use SugarCommerce\Flyouts\Components\FormField;
 use SugarCommerce\Flyouts\RestApi;
@@ -129,10 +130,12 @@ trait Scripts {
 		}
 
 		// Published into a registry keyed by this build's core handle rather
-		// than to a bare `wpFlyout` global. Two Strauss-prefixed copies each
-		// enqueue their own scripts, and a shared global would leave whichever
+		// than to a bare global. Two Strauss-prefixed copies each enqueue
+		// their own scripts, and a shared global would leave whichever
 		// localized last owning the REST URL and nonce for both. Each script
-		// resolves its own entry from the id WordPress stamps on its element.
+		// resolves its own entry from the id WordPress stamps on its element,
+		// and the core script adds `panel` to it -- the API that opens and
+		// closes a panel.
 		$handle = Runtime::handle();
 
 		wp_add_inline_script(
@@ -147,6 +150,9 @@ trait Scripts {
 					// The library's own icons, drawn here so the script
 					// draws the same ones without a copy of their paths.
 					'icons'     => Icon::markup(),
+					// This build's own fields script, whose modules start
+					// the fields in a panel: window.SugarCommerceFields[ fields ].modules.
+					'fields'    => FieldsRuntime::handle(),
 				] )
 			),
 			'before'

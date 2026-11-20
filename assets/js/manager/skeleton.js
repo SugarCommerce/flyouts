@@ -3,7 +3,7 @@
  * shape of a title and two cards of fields.
  */
 
-import { icon } from '../lib/config';
+import { build, icon } from '../lib/config';
 import { parse } from '../lib/dom';
 
 const FIELD =
@@ -50,6 +50,12 @@ export function skeleton( id, shape, loading ) {
 
 	flyout.id = id;
 	flyout.classList.add( ...shape );
+
+	// This build's, as a panel the server drew is: another plugin's copy of
+	// the scripts on the page leaves it alone.
+	if ( build() ) {
+		flyout.setAttribute( 'data-flyout-build', build() );
+	}
 	flyout.querySelector( '.wp-flyout-loading-text' ).textContent = loading;
 
 	return flyout;

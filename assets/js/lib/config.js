@@ -12,6 +12,14 @@
  * <script> element, "{handle}-js": the entry under that handle, or failing
  * that the longest key the handle starts with. A component's handle is
  * "{prefix}-{component}" and the entry is published once, under "{prefix}".
+ *
+ * That key is the build's name on the page too. PHP stamps it on every
+ * trigger and panel it draws, as `data-flyout-build`, and the scripts act
+ * only on what carries their own (mine()), so two plugins' copies on one
+ * page each answer their own triggers and leave the other's panels alone.
+ * Nothing is read from or written to a bare page global: the panel API is
+ * the entry's `panel`, and the fields modules a panel starts are those of
+ * the fields script the entry names (`fields`).
  */
 
 // Read while the script runs. Once it has, document.currentScript is null.
@@ -66,12 +74,25 @@ const ENGLISH = {
  * @return {Object} The build's settings.
  */
 export function resolve( element, registry, fallback = {} ) {
+	const key = keyOf( element, registry );
+
+	return key ? registry[ key ] : fallback;
+}
+
+/**
+ * The key a script's element names in a registry.
+ *
+ * @param {Element|null} element  The <script> element, or null.
+ * @param {Object}       registry window.SugarCommerceFlyouts.
+ * @return {string} The key, or '' when nothing matches.
+ */
+export function keyOf( element, registry ) {
 	const id = element && element.id ? element.id.replace( /-js$/, '' ) : '';
 	const entries = registry || {};
 	let best = '';
 
 	if ( id && entries[ id ] && 'object' === typeof entries[ id ] ) {
-		return entries[ id ];
+		return id;
 	}
 
 	Object.keys( entries ).forEach( ( key ) => {
@@ -86,20 +107,95 @@ export function resolve( element, registry, fallback = {} ) {
 		}
 	} );
 
-	return best ? entries[ best ] : fallback;
+	return best;
 }
 
 /**
- * This build's settings: restUrl, restNonce, strings and icons.
+ * This build's settings: restUrl, restNonce, strings, icons, fields and,
+ * once the core script has run, panel.
  *
- * @return {Object} The settings, or a page's bare `wpFlyout`, or nothing.
+ * @return {Object} The settings, or nothing.
  */
 export function settings() {
-	return resolve(
-		script,
-		window.SugarCommerceFlyouts,
-		window.wpFlyout || {}
-	);
+	return resolve( script, window.SugarCommerceFlyouts );
+}
+
+/**
+ * This build's name: its entry's key, which PHP stamps on what it draws as
+ * `data-flyout-build`.
+ *
+ * @return {string} The key, or '' when the page published nothing.
+ */
+export function build() {
+	return keyOf( script, window.SugarCommerceFlyouts );
+}
+
+/**
+ * Whether an element is this build's to act on: inside nothing stamped
+ * with a build, or inside something stamped with this one.
+ *
+ * Markup nobody stamped -- a trigger written by hand -- is anybody's, as it
+ * always was; markup another copy drew is that copy's alone.
+ *
+ * @param {Element|null} element The element.
+ * @return {boolean} Ours.
+ */
+export function mine( element ) {
+	const marked =
+		element && 'function' === typeof element.closest
+			? element.closest( '[data-flyout-build]' )
+			: null;
+
+	return ! marked || marked.getAttribute( 'data-flyout-build' ) === build();
+}
+
+/**
+ * This build's entry, made if the page published none, for the core script
+ * to put the panel API in.
+ *
+ * Keyed as PHP keys it: the core script's handle without its "-wp-flyout".
+ *
+ * @return {Object} The entry.
+ */
+export function own() {
+	const registry = ( window.SugarCommerceFlyouts =
+		window.SugarCommerceFlyouts || {} );
+	const key = keyOf( script, registry );
+
+	if ( key ) {
+		return registry[ key ];
+	}
+
+	const handle =
+		script && script.id
+			? script.id.replace( /-js$/, '' ).replace( /-wp-flyout$/, '' )
+			: '';
+
+	if ( ! handle ) {
+		return {};
+	}
+
+	registry[ handle ] = {};
+
+	return registry[ handle ];
+}
+
+/**
+ * The fields package's modules: those of this build's own copy, which PHP
+ * names in the settings (`fields`, its script's handle).
+ *
+ * Asked at the moment they are wanted: the fields script may run after
+ * this one.
+ *
+ * @return {Object|null} The modules, or null when they are not there.
+ */
+export function fieldsModules() {
+	const handle = settings().fields;
+	const entry = handle
+		? ( window.SugarCommerceFields || {} )[ handle ]
+		: null;
+
+	return ( entry && entry.modules ) || null;
 }
 
 /**

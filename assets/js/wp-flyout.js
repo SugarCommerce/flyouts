@@ -5,12 +5,15 @@
  *
  * Registered as `{prefix}-wp-flyout`, with `-manager`, `-alert` and
  * `-prompt` kept as handles that bring it (Assets::register_assets()).
- * Publishes `window.WPFlyout` (panel/panel.js).
+ * Publishes the panel API (panel/panel.js) in its build's own entry,
+ * `window.SugarCommerceFlyouts[ prefix ].panel` -- never as a page global
+ * another plugin's copy would overwrite.
  */
 
 import domReady from '@wordpress/dom-ready';
 
 import { bindAlerts } from './lib/alert';
+import { own } from './lib/config';
 import { init as initManager } from './manager/init';
 import { watchEscape } from './panel/escape';
 import panel from './panel/panel';
@@ -18,7 +21,7 @@ import panel from './panel/panel';
 // Asked on the way down, before any widget in a panel has handled it.
 watchEscape();
 
-window.WPFlyout = panel;
+own().panel = panel;
 
 domReady( () => {
 	panel.init();

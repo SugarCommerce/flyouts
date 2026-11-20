@@ -3,5 +3,5 @@
 		'wp-api-fetch',
 		'wp-dom-ready'
 	),
-	'version' => 'ac053a1b0db322ef95ed'
+	'version' => 'ba8b26a43396171c0b77'
 );

@@ -18,6 +18,7 @@ namespace SugarCommerce\Flyouts;
 
 use SugarCommerce\Flyouts\Traits\Flyout\Header;
 use SugarCommerce\Flyouts\Traits\Flyout\Rendering;
+use SugarCommerce\Flyouts\Utils\Runtime;
 
 /**
  * Class Flyout
@@ -395,7 +396,8 @@ class Flyout {
             aria-modal="true"
             aria-labelledby="<?php echo esc_attr( $this->id ); ?>-title"
             tabindex="-1"
-            data-flyout-id="<?php echo esc_attr( $this->id ); ?>">
+            data-flyout-id="<?php echo esc_attr( $this->id ); ?>"
+            data-flyout-build="<?php echo esc_attr( Runtime::handle() ); ?>">
 
             <?php do_action( "wp_flyout_before_header_{$this->id}", $this->config ); ?>
 

@@ -11,6 +11,7 @@ namespace SugarCommerce\Flyouts\Traits\Manager;
 
 use SugarCommerce\Flyouts\Flyout;
 use SugarCommerce\Flyouts\Utils\Icon;
+use SugarCommerce\Flyouts\Utils\Runtime;
 
 /**
  * The buttons and links that open a flyout.
@@ -138,6 +139,10 @@ trait Triggers {
 			'class'               => esc_attr( trim( 'wp-flyout-trigger ' . $class_name ) ),
 			'data-flyout-manager' => esc_attr( $this->prefix ),
 			'data-flyout'         => esc_attr( $flyout_id ),
+
+			// Whose scripts answer it: another plugin's copy of this
+			// library on the same page leaves it alone.
+			'data-flyout-build'   => esc_attr( Runtime::handle() ),
 
 			// So the placeholder shown while the record loads is the width
 			// the record's panel will be, and nothing jumps when it arrives.

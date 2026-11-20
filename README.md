@@ -754,7 +754,7 @@ that file, in the footer. No jQuery: it is no dependency of any of them.
 
 | Entry | Handle, loaded by | Modules |
 |---|---|---|
-| `wp-flyout` | `{prefix}-wp-flyout`, on every screen with a panel (`Assets::enqueue()`) | `panel/panel` (open, close, overlay, tabs, focus; `window.WPFlyout`), `panel/escape`, `manager/init`, `manager/load` (trigger, placeholder, load, the panel put in the page), `manager/header`, `manager/steps` (previous and next, J and K), `manager/menu`, `manager/actions` (menu, row and prompt actions), `manager/dirty` (unsaved changes), `manager/confirm`, `manager/save` (Save, Delete, the panel's buttons), `manager/errors` (a refused save under its field), `manager/clipboard`, `manager/skeleton`, `prompt/prompt` (the form an action asks for) |
+| `wp-flyout` | `{prefix}-wp-flyout`, on every screen with a panel (`Assets::enqueue()`) | `panel/panel` (open, close, overlay, tabs, focus; the build's `panel`), `panel/escape`, `manager/init`, `manager/load` (trigger, placeholder, load, the panel put in the page), `manager/header`, `manager/steps` (previous and next, J and K), `manager/menu`, `manager/actions` (menu, row and prompt actions), `manager/dirty` (unsaved changes), `manager/confirm`, `manager/save` (Save, Delete, the panel's buttons), `manager/errors` (a refused save under its field), `manager/clipboard`, `manager/skeleton`, `prompt/prompt` (the form an action asks for) |
 | `accordion` | `{prefix}-accordion`, when a panel has one | `components/accordion` |
 | `action-buttons` | `{prefix}-action-buttons` | `components/action-buttons`, `components/reload` |
 | `activity` | `{prefix}-activity` | `components/activity` (the note box) |
@@ -820,12 +820,41 @@ jQuery, and only when the page has it.
 
 ### Globals
 
-* `window.WPFlyout` -- `open( id, options )`, `close( id, { force } )`,
-  `closeAll()`, `getLastId()`, `discard( id )`, `active`. Its `describe()`,
+One: `window.SugarCommerceFlyouts`, a registry keyed by each build's handle
+(`Runtime::handle()`: `sugarcommerce-flyouts` in a plain install,
+`{build}-sugarcommerce-flyouts` in a plugin's prefixed copy). Two plugins'
+copies on one page each have their own entry, and nothing else of theirs is
+on `window`. An entry is the settings `Manager::enqueue_assets()` publishes
+-- `restUrl`, `restNonce`, `strings`, `icons`, and `fields`, the handle of
+the same build's fields script, whose `window.SugarCommerceFields[ fields ].modules`
+start and stop the fields in a panel -- and, once the core script has run:
+
+* `panel` -- `open( id, options )`, `close( id, { force } )`, `closeAll()`,
+  `getLastId()`, `discard( id )`, `active`. Its `describe()`,
   `focusInside()` and `initTabs()` take the panel's element (a jQuery object
-  still works).
-* `window.SugarCommerceFlyouts` -- the per-build settings, published by
-  `Manager::enqueue_assets()` as before.
+  still works). It was `window.WPFlyout`.
+
+A plugin's own script reaches its build's panel API by the handle, which its
+PHP hands it -- read from the plugin's own copy of the class, so a prefixed
+build names its prefixed handle:
+
+```php
+wp_add_inline_script( 'my-admin', sprintf( 'window.myAdmin = %s;', wp_json_encode( [
+	'flyouts' => \SugarCommerce\Flyouts\Utils\Runtime::handle(),
+] ) ), 'before' );
+```
+
+```js
+const entry = ( window.SugarCommerceFlyouts || {} )[ window.myAdmin.flyouts ];
+entry && entry.panel && entry.panel.close( 'wp-flyout-order-7' );
+```
+
+Every trigger and panel the PHP draws carries `data-flyout-build` with that
+handle, and the scripts act only on what carries their own: another copy's
+triggers are not answered, its panels not cleared, its overlay not reused.
+Markup with no stamp -- a trigger written by hand -- is answered as before;
+give it `data-flyout-build="<?php echo esc_attr( Runtime::handle() ); ?>"`
+when another plugin's copy may be on the same page.
 
 `WPFlyoutManager`, `WPFlyoutPrompt`, `WPFlyoutAlert` and the components'
 `WPFlyout*` objects were how the old files reached each other; they are

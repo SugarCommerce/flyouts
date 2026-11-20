@@ -15,7 +15,6 @@ import { publish, REST } from './support/server';
 beforeEach( () => publish() );
 
 afterEach( () => {
-	delete window.wpFlyout;
 	delete window.SugarCommerceFlyouts;
 } );
 

@@ -2,8 +2,8 @@
  * A panel on screen: opening and closing it, the overlay under it, its
  * tabs, and keeping focus inside it.
  *
- * Published as `window.WPFlyout`, the documented way to open and close a
- * panel by its id from other code. Its events:
+ * Published as its build's `window.SugarCommerceFlyouts[ prefix ].panel`,
+ * the documented way to open and close a panel by its id from other code. Its events:
  *
  * - `wpflyout:opened` on the document, `{ id, element }`, once the panel
  *   has slid in and taken focus; `flyout:ready` on the panel at the same
@@ -15,6 +15,7 @@
  * - `wpflyout:tab-changed` on the document, `{ flyoutId, tabId }`.
  */
 
+import { build } from '../lib/config';
 import { all, isShown, isUsable, on, one } from '../lib/dom';
 import { emit } from '../lib/events';
 import { stash } from '../lib/store';
@@ -316,6 +317,12 @@ const panel = {
 		if ( ! overlay ) {
 			overlay = document.createElement( 'div' );
 			overlay.className = 'wp-flyout-overlay';
+
+			// This build's: another copy's scripts neither reuse it nor
+			// take it away.
+			if ( build() ) {
+				overlay.setAttribute( 'data-flyout-build', build() );
+			}
 			document.body.append( overlay );
 		}
 

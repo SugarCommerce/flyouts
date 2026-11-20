@@ -335,7 +335,45 @@ if ( ! function_exists( 'wp_register_style' ) ) {
 
 if ( ! function_exists( 'wp_add_inline_script' ) ) {
 	function wp_add_inline_script( $handle, $data, $position = 'after' ) {
+		$GLOBALS['flyouts_test_inline'][ $handle ][] = [ $position, $data ];
+
 		return true;
+	}
+}
+
+// What a manager's enqueue_assets() calls, so a test can see what it
+// publishes: nothing is enqueued, and nothing is there yet.
+if ( ! function_exists( 'wp_enqueue_script' ) ) {
+	function wp_enqueue_script( $handle ) {
+	}
+}
+
+if ( ! function_exists( 'wp_enqueue_style' ) ) {
+	function wp_enqueue_style( $handle ) {
+	}
+}
+
+if ( ! function_exists( 'wp_style_is' ) ) {
+	function wp_style_is( $handle, $status = 'enqueued' ) {
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_script_is' ) ) {
+	function wp_script_is( $handle, $status = 'enqueued' ) {
+		return false;
+	}
+}
+
+// Enough of WP_Scripts for the fields package's enqueue() to ask whether its
+// own script is registered (it is not, here) and move on.
+if ( ! function_exists( 'wp_scripts' ) ) {
+	function wp_scripts() {
+		return new class() {
+			public function query( $handle, $list = 'registered' ) {
+				return false;
+			}
+		};
 	}
 }
 

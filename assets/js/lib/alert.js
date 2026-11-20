@@ -7,7 +7,7 @@
  */
 
 import { icon } from './config';
-import { make, on } from './dom';
+import { make, on, one } from './dom';
 import { emit } from './events';
 import { slideUp } from './motion';
 
@@ -102,8 +102,8 @@ export function show( message, type = 'info', options = {} ) {
 
 	const target =
 		( 'string' === typeof options.target
-			? document.querySelector( options.target )
-			: options.target ) || document.querySelector( '.wp-flyout-body' );
+			? one( options.target )
+			: options.target ) || one( '.wp-flyout-body' );
 
 	if ( target ) {
 		if ( options.prepend ) {

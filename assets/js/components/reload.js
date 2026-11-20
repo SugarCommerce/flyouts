@@ -2,6 +2,8 @@
  * Drawing a panel again after a component's action asked for it.
  */
 
+import { all } from '../lib/dom';
+import { settings } from '../lib/config';
 import { reload } from '../lib/page';
 
 /**
@@ -11,15 +13,16 @@ import { reload } from '../lib/page';
  * @param {Element} flyout The panel.
  */
 export function reloadFlyout( flyout ) {
-	const trigger = Array.from(
-		document.querySelectorAll( '[data-flyout-instance]' )
-	).find( ( element ) => element.dataset.flyoutInstance === flyout.id );
+	const trigger = all( '[data-flyout-instance]' ).find(
+		( element ) => element.dataset.flyoutInstance === flyout.id
+	);
+	const panel = settings().panel;
 
-	if ( ! trigger || ! window.WPFlyout ) {
+	if ( ! trigger || ! panel ) {
 		reload();
 		return;
 	}
 
-	window.WPFlyout.close( flyout.id );
+	panel.close( flyout.id );
 	setTimeout( () => trigger.click(), 300 );
 }

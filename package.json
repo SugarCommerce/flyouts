@@ -5,11 +5,11 @@
   "description": "The panels' scripts -- opening and closing, loading and saving, the header menu, prompts and alerts, and the components' own -- built to assets/build with @wordpress/scripts.",
   "license": "GPL-2.0-or-later",
   "scripts": {
-    "build": "wp-scripts build wp-flyout=./src/js/wp-flyout.js accordion=./src/js/accordion.js action-buttons=./src/js/action-buttons.js activity=./src/js/activity.js image-picker=./src/js/image-picker.js line-items=./src/js/line-items.js refund-form=./src/js/refund-form.js --output-path=assets/build",
-    "start": "wp-scripts start wp-flyout=./src/js/wp-flyout.js accordion=./src/js/accordion.js action-buttons=./src/js/action-buttons.js activity=./src/js/activity.js image-picker=./src/js/image-picker.js line-items=./src/js/line-items.js refund-form=./src/js/refund-form.js --output-path=assets/build",
+    "build": "wp-scripts build wp-flyout=./assets/js/wp-flyout.js accordion=./assets/js/accordion.js action-buttons=./assets/js/action-buttons.js activity=./assets/js/activity.js image-picker=./assets/js/image-picker.js line-items=./assets/js/line-items.js refund-form=./assets/js/refund-form.js --output-path=assets/build",
+    "start": "wp-scripts start wp-flyout=./assets/js/wp-flyout.js accordion=./assets/js/accordion.js action-buttons=./assets/js/action-buttons.js activity=./assets/js/activity.js image-picker=./assets/js/image-picker.js line-items=./assets/js/line-items.js refund-form=./assets/js/refund-form.js --output-path=assets/build",
     "test:js": "wp-scripts test-unit-js",
-    "lint:js": "wp-scripts lint-js src/js tests/js",
-    "format:js": "wp-scripts format src/js tests/js"
+    "lint:js": "wp-scripts lint-js assets/js tests/js",
+    "format:js": "wp-scripts format assets/js tests/js"
   },
   "devDependencies": {
     "@wordpress/api-fetch": "^8.1.0",

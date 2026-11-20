@@ -7,7 +7,7 @@
 
 import { beforeAll, describe, expect, test } from 'vitest';
 
-import { collect, missing, pairs, toObject } from '../../src/js/lib/form';
+import { collect, missing, pairs, toObject } from '../../assets/js/lib/form';
 import { layout } from './support/layout';
 
 beforeAll( layout );

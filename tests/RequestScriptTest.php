@@ -36,7 +36,7 @@ final class RequestScriptTest extends TestCase {
 	 * One module makes the requests; nothing else calls fetch() itself.
 	 */
 	public function test_no_component_calls_fetch_itself(): void {
-		$sources = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( dirname( __DIR__ ) . '/src/js', \FilesystemIterator::SKIP_DOTS ) );
+		$sources = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( dirname( __DIR__ ) . '/assets/js', \FilesystemIterator::SKIP_DOTS ) );
 
 		foreach ( $sources as $file ) {
 			if ( 'request.js' === $file->getFilename() ) {

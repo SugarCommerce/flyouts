@@ -14,17 +14,20 @@ import {
 	vi,
 } from 'vitest';
 
-import { bindActionButtons } from '../../src/js/components/action-buttons';
-import { bindActivity } from '../../src/js/components/activity';
+import { bindActionButtons } from '../../assets/js/components/action-buttons';
+import { bindActivity } from '../../assets/js/components/activity';
 import {
 	bindImagePickers,
 	clearImage,
 	setImage,
 	urlFor,
-} from '../../src/js/components/image-picker';
-import { bindRefundForms, refund } from '../../src/js/components/refund-form';
-import { reload } from '../../src/js/lib/page';
-import { stash } from '../../src/js/lib/store';
+} from '../../assets/js/components/image-picker';
+import {
+	bindRefundForms,
+	refund,
+} from '../../assets/js/components/refund-form';
+import { reload } from '../../assets/js/lib/page';
+import { stash } from '../../assets/js/lib/store';
 import { layout } from './support/layout';
 import { flush, publish, server } from './support/server';
 
@@ -34,7 +37,10 @@ vi.mock( '@wordpress/api-fetch', () => ( {
 	default: ( options ) => rest.fetch( options ),
 } ) );
 
-vi.mock( '../../src/js/lib/page', () => ( { reload: vi.fn(), go: vi.fn() } ) );
+vi.mock( '../../assets/js/lib/page', () => ( {
+	reload: vi.fn(),
+	go: vi.fn(),
+} ) );
 
 const media = vi.hoisted( () => ( { frames: [] } ) );
 

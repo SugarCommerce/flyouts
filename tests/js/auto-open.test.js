@@ -5,8 +5,8 @@
 
 import { beforeAll, expect, test, vi } from 'vitest';
 
-import { init } from '../../src/js/manager/init';
-import panel from '../../src/js/panel/panel';
+import { init } from '../../assets/js/manager/init';
+import panel from '../../assets/js/panel/panel';
 import { layout } from './support/layout';
 import { panel as drawn, trigger } from './support/panels';
 import { flush, publish, server } from './support/server';

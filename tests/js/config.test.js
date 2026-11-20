@@ -4,7 +4,7 @@
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { icon, resolve, settings, strings } from '../../src/js/lib/config';
+import { icon, resolve, settings, strings } from '../../assets/js/lib/config';
 
 afterEach( () => {
 	delete window.wpFlyout;

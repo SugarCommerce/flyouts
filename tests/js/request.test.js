@@ -9,7 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { api, request } from '../../src/js/lib/request';
+import { api, request } from '../../assets/js/lib/request';
 import { publish, REST } from './support/server';
 
 beforeEach( () => publish() );

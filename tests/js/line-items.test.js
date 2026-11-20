@@ -19,9 +19,9 @@ import {
 	findExistingItem,
 	moneyFor,
 	rowMinorUnits,
-} from '../../src/js/components/line-items';
-import { formatter, say, toMinor } from '../../src/js/lib/money';
-import { emit } from '../../src/js/lib/events';
+} from '../../assets/js/components/line-items';
+import { formatter, say, toMinor } from '../../assets/js/lib/money';
+import { emit } from '../../assets/js/lib/events';
 import { flush, publish, server } from './support/server';
 
 const rest = vi.hoisted( () => ( { fetch: null } ) );

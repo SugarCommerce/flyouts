@@ -13,8 +13,8 @@ import {
 	vi,
 } from 'vitest';
 
-import { watchEscape } from '../../src/js/panel/escape';
-import panel from '../../src/js/panel/panel';
+import { watchEscape } from '../../assets/js/panel/escape';
+import panel from '../../assets/js/panel/panel';
 import { layout } from './support/layout';
 
 beforeAll( () => {

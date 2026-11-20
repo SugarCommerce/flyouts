@@ -5,8 +5,8 @@
 
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { close, field, open } from '../../src/js/prompt/prompt';
-import { emit } from '../../src/js/lib/events';
+import { close, field, open } from '../../assets/js/prompt/prompt';
+import { emit } from '../../assets/js/lib/events';
 import { layout } from './support/layout';
 
 beforeAll( layout );

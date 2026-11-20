@@ -17,12 +17,16 @@ import {
 	vi,
 } from 'vitest';
 
-import { init } from '../../src/js/manager/init';
-import { keyIsTaken, neighbours, position } from '../../src/js/manager/steps';
-import { bindAlerts } from '../../src/js/lib/alert';
-import { reload, go } from '../../src/js/lib/page';
-import { watchEscape } from '../../src/js/panel/escape';
-import panel from '../../src/js/panel/panel';
+import { init } from '../../assets/js/manager/init';
+import {
+	keyIsTaken,
+	neighbours,
+	position,
+} from '../../assets/js/manager/steps';
+import { bindAlerts } from '../../assets/js/lib/alert';
+import { reload, go } from '../../assets/js/lib/page';
+import { watchEscape } from '../../assets/js/panel/escape';
+import panel from '../../assets/js/panel/panel';
 import { layout } from './support/layout';
 import { panel as drawn, trigger } from './support/panels';
 import { flush, publish, server } from './support/server';
@@ -33,7 +37,10 @@ vi.mock( '@wordpress/api-fetch', () => ( {
 	default: ( options ) => rest.fetch( options ),
 } ) );
 
-vi.mock( '../../src/js/lib/page', () => ( { reload: vi.fn(), go: vi.fn() } ) );
+vi.mock( '../../assets/js/lib/page', () => ( {
+	reload: vi.fn(),
+	go: vi.fn(),
+} ) );
 
 let routes;
 let heard;

@@ -10,7 +10,7 @@
 import jQuery from 'jquery';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { emit } from '../../src/js/lib/events';
+import { emit } from '../../assets/js/lib/events';
 
 let panel;
 

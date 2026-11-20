@@ -744,7 +744,7 @@ fallback.
 
 ## The scripts
 
-Plain JavaScript in ES modules (`src/js`), each with one job, built by
+Plain JavaScript in ES modules (`assets/js`), each with one job, built by
 `@wordpress/scripts` into `assets/build` -- one file per script, with an
 `.asset.php` naming the WordPress scripts it imports (`wp-api-fetch`,
 `wp-dom-ready`, `wp-i18n`) and a version that changes with its contents.
@@ -878,6 +878,8 @@ differs from what was committed.
 * `src/Flyouts.php` (the static entry points), `Registry.php`, `Identity.php`,
   `Assets.php`, `Components.php`, `ActionBar.php`, and `src/Utils/` (icons,
   amounts, the runtime's names).
+* `src/` is PHP only. The scripts' sources are in `assets/js/`, built to
+  `assets/build/`; the styles are in `assets/css/`.
 
 ## Requirements
 

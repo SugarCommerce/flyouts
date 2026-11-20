@@ -43,7 +43,7 @@ class Assets {
 	 * The core script's other handles.
 	 *
 	 * The panel, the manager, alerts and the prompt were four files and are
-	 * one build now (assets/build/wp-flyout.js, from src/js). Each kept its
+	 * one build now (assets/build/wp-flyout.js, from assets/js). Each kept its
 	 * handle, registered with no file of its own and the one before it as
 	 * its dependency, so enqueuing or depending on any of them still brings
 	 * the panels -- and the last, which a component depends on, brings all.

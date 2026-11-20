@@ -5,7 +5,7 @@
 import jQuery from 'jquery';
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
-import { bindAccordions } from '../../src/js/components/accordion';
+import { bindAccordions } from '../../assets/js/components/accordion';
 
 beforeAll( bindAccordions );
 

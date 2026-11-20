@@ -18,7 +18,7 @@ import {
 	bindAlerts,
 	dismiss,
 	show as showAlertIn,
-} from '../../src/js/lib/alert';
+} from '../../assets/js/lib/alert';
 import {
 	escapeHtml,
 	hide,
@@ -28,20 +28,20 @@ import {
 	parse,
 	replaceHtml,
 	show,
-} from '../../src/js/lib/dom';
+} from '../../assets/js/lib/dom';
 import {
 	setButtonState,
 	showAlert,
 	toast,
 	toastRegion,
-} from '../../src/js/lib/feedback';
+} from '../../assets/js/lib/feedback';
 import {
 	fadeOut,
 	scrollToTop,
 	slideDown,
 	slideUp,
-} from '../../src/js/lib/motion';
-import { itemId, panelConfig, stash } from '../../src/js/lib/store';
+} from '../../assets/js/lib/motion';
+import { itemId, panelConfig, stash } from '../../assets/js/lib/store';
 import { layout } from './support/layout';
 import { publish } from './support/server';
 
